@@ -1,40 +1,27 @@
 /* =========================================================
    Indu Toys — Katalog, Kasir POS, Kelola Stok & Laporan
-   Semua data disimpan di LocalStorage browser.
+   Data produk, transaksi, pengaturan & staf disimpan di Supabase.
+   Keranjang dan tema disimpan di LocalStorage perangkat.
    ========================================================= */
-(() => {
+(async () => {
   "use strict";
 
   /* ---------- KONSTANTA ---------- */
   const KEYS = {
-    products: "indutoys.products",
-    transactions: "indutoys.transactions",
     catalogCart: "indutoys.catalogCart",
     posCart: "indutoys.posCart",
-    settings: "indutoys.settings",
     theme: "indutoys.theme",
   };
   const LOW_STOCK = 5;
   const AGES = ["0-2 tahun", "3-5 tahun", "6-8 tahun", "9+ tahun"];
+  const ROLES = { pending: "Menunggu", kasir: "Kasir", admin: "Admin" };
+  const IMAGE_BUCKET = "product-images";
   const DEFAULT_SETTINGS = {
     storeName: "Indu Toys",
     wa: "6281234567890",
     address: "Jl. Ceria No. 1, Indonesia",
     bank: "BCA 1234567890 a.n. Indu Toys",
   };
-  const unsplash = (id) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=600&q=70`;
-  const SEED_PRODUCTS = [
-    { name: "Balok Susun Kayu Pelangi", category: "Edukatif", age: "0-2 tahun", price: 89000, stock: 24, image: unsplash("1596461404969-9ae70f2830c1"), desc: "Balok kayu warna-warni untuk melatih motorik dan mengenal warna." },
-    { name: "Boneka Teddy Bear Lembut", category: "Boneka", age: "0-2 tahun", price: 125000, stock: 15, image: unsplash("1559454403-b8fb88521f11"), desc: "Teddy bear super lembut, aman untuk bayi, bisa dicuci." },
-    { name: "Mobil Balap Remote Control", category: "Kendaraan", age: "6-8 tahun", price: 249000, stock: 4, image: unsplash("1594787318286-3d835c1d207f"), desc: "Mobil RC lincah dengan baterai isi ulang, jangkauan 30 meter." },
-    { name: "Puzzle Peta Indonesia 100 pcs", category: "Puzzle", age: "6-8 tahun", price: 65000, stock: 30, image: unsplash("1606503153255-59d8b8b82176"), desc: "Belajar provinsi dan pulau Indonesia sambil bermain." },
-    { name: "Set Bricks Kota Kreatif 500 pcs", category: "Konstruksi", age: "9+ tahun", price: 359000, stock: 8, image: unsplash("1587654780291-39c9404d746b"), desc: "Bangun kota impian dengan 500 keping bricks kompatibel." },
-    { name: "Kereta Api Kayu & Rel", category: "Kendaraan", age: "3-5 tahun", price: 175000, stock: 3, image: unsplash("1558060370-d644479cb6f7"), desc: "Set kereta kayu lengkap dengan 20 potong rel." },
-    { name: "Kubus Rubik 3x3 Speed", category: "Edukatif", age: "9+ tahun", price: 45000, stock: 40, image: unsplash("1591991731833-b4807cf7ef94"), desc: "Rubik putaran halus untuk melatih logika dan kesabaran." },
-    { name: "Mainan Dapur-dapuran Mini", category: "Peran", age: "3-5 tahun", price: 199000, stock: 10, image: unsplash("1608889175123-8ee362201f81"), desc: "Set dapur mini lengkap dengan alat masak dan sayuran mainan." },
-    { name: "Gelang Bunyi Bayi (Rattle)", category: "Bayi", age: "0-2 tahun", price: 39000, stock: 2, image: unsplash("1515488042361-ee00e0ddd4e4"), desc: "Rattle warna cerah, BPA free, merangsang pendengaran bayi." },
-    { name: "Bola Sepak Anak Ukuran 3", category: "Outdoor", age: "6-8 tahun", price: 79000, stock: 18, image: unsplash("1614632537197-38a17061c2bd"), desc: "Bola ringan dan empuk untuk latihan si kecil." },
-  ];
 
   /* ---------- UTIL ---------- */
   const $ = (s, el = document) => el.querySelector(s);
@@ -63,37 +50,9 @@
       } catch { return fallback; }
     },
     set(key, val) {
-      try { localStorage.setItem(key, JSON.stringify(val)); }
-      catch (e) { toast("Gagal menyimpan data: penyimpanan browser penuh atau diblokir.", "error"); }
+      try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* penyimpanan lokal tidak tersedia */ }
     },
   };
-
-  /* ---------- STATE ---------- */
-  let products = store.get(KEYS.products, null);
-  if (!Array.isArray(products)) {
-    products = SEED_PRODUCTS.map((p, i) => ({ id: "P" + (1001 + i), ...p }));
-    store.set(KEYS.products, products);
-  }
-  let transactions = store.get(KEYS.transactions, []);
-  let catalogCart = store.get(KEYS.catalogCart, []);
-  let posCart = store.get(KEYS.posCart, []);
-  let settings = { ...DEFAULT_SETTINGS, ...store.get(KEYS.settings, {}) };
-
-  const ui = {
-    view: "catalog",
-    catCategory: "all",
-    payMethod: "Tunai",
-    reportPeriod: "today",
-    recapMode: "daily",
-    lastTx: null,
-  };
-
-  const saveProducts = () => store.set(KEYS.products, products);
-  const saveTx = () => store.set(KEYS.transactions, transactions);
-  const saveCatalogCart = () => store.set(KEYS.catalogCart, catalogCart);
-  const savePosCart = () => store.set(KEYS.posCart, posCart);
-  const findProduct = (id) => products.find((p) => p.id === id);
-  const categories = () => [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
 
   /* ---------- TOAST / LOADING / CONFIRM ---------- */
   function toast(msg, type = "success") {
@@ -101,7 +60,7 @@
     el.className = "toast " + type;
     el.textContent = msg;
     $("#toasts").appendChild(el);
-    setTimeout(() => el.remove(), 3500);
+    setTimeout(() => el.remove(), type === "error" ? 6000 : 3500);
   }
   function loading(show, text = "Memproses...") {
     $("#loadingText").textContent = text;
@@ -120,6 +79,103 @@
   }
   const openModal = (id) => { $(id).hidden = false; };
   const closeModals = () => $$(".modal").forEach((m) => { if (m.id !== "confirmModal") m.hidden = true; });
+  const anyModalOpen = () => $$(".modal").some((m) => !m.hidden);
+  const errMsg = (e) => {
+    const m = e?.message || String(e);
+    if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return "Tidak bisa terhubung ke server. Periksa koneksi internet.";
+    if (/row-level security|permission denied|42501/i.test(m)) return "Akses ditolak. Akun kamu tidak punya izin untuk tindakan ini.";
+    if (/duplicate key.*products_name_key/i.test(m)) return "Nama mainan sudah ada. Gunakan nama lain.";
+    return m;
+  };
+
+  /* ---------- KONEKSI SUPABASE ---------- */
+  const CFG = window.INDU_CONFIG || {};
+  if (!window.supabase || !CFG.supabaseUrl || !CFG.supabaseKey) {
+    document.querySelector(".main").innerHTML = `
+      <div class="card locked-card">
+        <span class="big">⚙️</span>
+        <h2>Koneksi database belum siap</h2>
+        <p>${!window.supabase
+          ? "Pustaka Supabase gagal dimuat. Periksa koneksi internet lalu muat ulang halaman."
+          : "Isi <b>supabaseUrl</b> dan <b>supabaseKey</b> di file <code>config.js</code> dengan data dari Supabase Dashboard → Project Settings → API Keys."}</p>
+      </div>`;
+    return;
+  }
+  const sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey);
+
+  /* ---------- STATE ---------- */
+  let products = [];
+  let transactions = [];
+  let catalogCart = store.get(KEYS.catalogCart, []);
+  let posCart = store.get(KEYS.posCart, []);
+  let settings = { ...DEFAULT_SETTINGS };
+  let session = null;
+  let profile = null;
+
+  const ui = {
+    view: "catalog",
+    catCategory: "all",
+    payMethod: "Tunai",
+    reportPeriod: "today",
+    recapMode: "daily",
+    lastTx: null,
+    reportToken: 0,
+  };
+
+  const saveCatalogCart = () => store.set(KEYS.catalogCart, catalogCart);
+  const savePosCart = () => store.set(KEYS.posCart, posCart);
+  const findProduct = (id) => products.find((p) => p.id === id);
+  const categories = () => [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
+
+  const role = () => profile?.role || null;
+  const isStaff = () => role() === "kasir" || role() === "admin";
+  const isAdmin = () => role() === "admin";
+  const ACCESS = { catalog: () => true, pos: isStaff, stock: isAdmin, report: isAdmin };
+
+  /* ---------- DATA LAYER ---------- */
+  const fromDbProduct = (r) => ({
+    id: r.id, name: r.name, category: r.category, age: r.age,
+    price: Number(r.price) || 0, stock: Number(r.stock) || 0, image: r.image || "", desc: r.description || "",
+  });
+  const toDbProduct = (p) => ({
+    name: p.name, category: p.category, age: p.age, price: p.price, stock: p.stock,
+    image: p.image || null, description: p.desc || null, updated_at: new Date().toISOString(),
+  });
+  const fromDbTx = (r) => ({
+    id: r.id, date: r.created_at, items: r.items || [], total: r.total, method: r.method,
+    paid: r.paid, change: r.change_amount, cashier: r.cashier_name || "",
+  });
+
+  async function loadProducts() {
+    const { data, error } = await sb.from("products").select("*").order("name");
+    if (error) throw error;
+    products = data.map(fromDbProduct);
+  }
+  async function loadSettings() {
+    const { data, error } = await sb.from("settings").select("*").eq("id", 1).maybeSingle();
+    if (error) throw error;
+    if (data) settings = { storeName: data.store_name, wa: data.wa, address: data.address || "", bank: data.bank || "" };
+  }
+  async function loadProfile() {
+    profile = null;
+    if (!session) return;
+    const { data, error } = await sb.from("profiles").select("*").eq("user_id", session.user.id).maybeSingle();
+    if (error) console.error(error);
+    profile = data || { user_id: session.user.id, email: session.user.email, role: "pending" };
+  }
+  async function loadTransactions(since) {
+    const all = [];
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      let q = sb.from("transactions").select("*").order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+      if (since) q = q.gte("created_at", since.toISOString());
+      const { data, error } = await q;
+      if (error) throw error;
+      all.push(...data);
+      if (data.length < PAGE) break;
+    }
+    transactions = all.map(fromDbTx);
+  }
 
   /* ---------- TEMA & NAVIGASI ---------- */
   function applyTheme(theme) {
@@ -138,7 +194,6 @@
   function setView(view) {
     ui.view = view;
     $$(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
-    $$(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + view));
     $("#pageTitle").textContent = TITLES[view];
     $$("[data-show-on]").forEach((el) => { el.hidden = el.dataset.showOn !== view; });
     toggleSidebar(false);
@@ -147,7 +202,20 @@
     history.replaceState(null, "", "#" + view);
   }
   function renderView() {
+    const allowed = ACCESS[ui.view]();
+    $$(".view").forEach((v) => v.classList.toggle("active", v.id === (allowed ? "view-" + ui.view : "view-locked")));
+    if (!allowed) return renderLocked();
     ({ catalog: renderCatalog, pos: renderPOS, stock: renderStock, report: renderReport })[ui.view]();
+  }
+  function renderLocked() {
+    const needs = ui.view === "pos" ? "kasir atau admin" : "admin";
+    $("#lockedTitle").textContent = `${TITLES[ui.view]} khusus ${needs}`;
+    $("#lockedLoginBtn").hidden = !!session;
+    $("#lockedText").textContent = !session
+      ? `Silakan masuk dengan akun staf untuk membuka ${TITLES[ui.view]}.`
+      : role() === "pending"
+        ? "Akun kamu belum diberi peran. Minta admin toko mengaktifkan akunmu di Kelola Stok → Pengguna & Peran Staf."
+        : `Akun kamu berperan ${ROLES[role()]}. Halaman ini hanya untuk ${needs}.`;
   }
   function toggleSidebar(open) {
     $("#sidebar").classList.toggle("open", open);
@@ -174,7 +242,7 @@
   function updateLowBadge() {
     const low = products.filter((p) => p.stock <= LOW_STOCK).length;
     const b = $("#navLowBadge");
-    b.hidden = low === 0;
+    b.hidden = low === 0 || !isAdmin();
     b.textContent = low;
     b.title = `${low} produk stok menipis`;
   }
@@ -184,6 +252,58 @@
     if (p.stock <= LOW_STOCK) return `<span class="badge badge-low">⚠️ Sisa ${p.stock}</span>`;
     return "";
   }
+
+  /* =========================================================
+     LOGIN STAF
+     ========================================================= */
+  function renderAuth() {
+    $$(".nav-item").forEach((b) => b.classList.toggle("locked", !ACCESS[b.dataset.view]()));
+    $("#userBox").innerHTML = session
+      ? `<div class="user-email" title="${esc(session.user.email)}">👤 ${esc(profile?.full_name || session.user.email)}</div>
+         <div class="user-row"><span class="role-tag">${ROLES[role()] || "Menunggu"}</span><button class="link" id="logoutBtn">Keluar</button></div>`
+      : `<button id="openLoginBtn">🔑 Masuk Staf</button>`;
+    updateLowBadge();
+  }
+  function openLogin() {
+    $("#loginError").hidden = true;
+    $("#loginPassword").value = "";
+    openModal("#loginModal");
+    setTimeout(() => $("#loginEmail").focus(), 50);
+  }
+  $("#userBox").addEventListener("click", async (e) => {
+    if (e.target.id === "openLoginBtn") openLogin();
+    if (e.target.id === "logoutBtn") {
+      await sb.auth.signOut();
+      toast("Kamu sudah keluar.");
+    }
+  });
+  $("#lockedLoginBtn").addEventListener("click", openLogin);
+  $("#loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = $("#loginSubmit");
+    btn.disabled = true; btn.textContent = "Memeriksa...";
+    const { error } = await sb.auth.signInWithPassword({ email: $("#loginEmail").value.trim(), password: $("#loginPassword").value });
+    btn.disabled = false; btn.textContent = "Masuk";
+    if (error) {
+      $("#loginError").hidden = false;
+      $("#loginError").textContent = /invalid login/i.test(error.message) ? "Email atau kata sandi salah." : errMsg(error);
+      return;
+    }
+    closeModals();
+  });
+
+  async function onSessionChange(newSession) {
+    session = newSession;
+    await loadProfile();
+    renderAuth();
+    renderView();
+    if (session) toast(`Halo, ${profile?.full_name || session.user.email}! Peran: ${ROLES[role()]}`);
+  }
+  sb.auth.onAuthStateChange((event, s) => {
+    if (event === "SIGNED_IN" && s?.user?.id === session?.user?.id) { session = s; return; } // token/tab refresh
+    if (event === "SIGNED_IN" || event === "SIGNED_OUT") setTimeout(() => onSessionChange(s), 0);
+    else if (s) session = s;
+  });
 
   /* =========================================================
      MODE KATALOG
@@ -230,7 +350,7 @@
             </div>
           </div>
         </article>`;
-    }).join("") : `<div class="empty"><span class="big">🔍</span>Mainan tidak ditemukan. Coba ubah kata kunci atau filter.</div>`;
+    }).join("") : `<div class="empty"><span class="big">🔍</span>${products.length ? "Mainan tidak ditemukan. Coba ubah kata kunci atau filter." : "Belum ada mainan di etalase."}</div>`;
 
     renderCatalogCart();
   }
@@ -282,7 +402,7 @@
   }
 
   function renderCatalogCart() {
-    catalogCart = catalogCart.filter((c) => findProduct(c.id));
+    if (products.length) catalogCart = catalogCart.filter((c) => findProduct(c.id));
     const lines = cartLines(catalogCart);
     const count = lines.reduce((s, c) => s + c.qty, 0);
     $("#catalogCartCount").textContent = count;
@@ -307,8 +427,7 @@
       } else if (t.dataset[scope + "Dec"]) {
         item.qty = Math.max(1, item.qty - 1);
       } else {
-        const idx = cart().indexOf(item);
-        cart().splice(idx, 1);
+        cart().splice(cart().indexOf(item), 1);
       }
       save(); rerender();
     };
@@ -380,10 +499,10 @@
   const posTotal = () => cartLines(posCart).reduce((s, c) => s + c.p.price * c.qty, 0);
 
   function renderPosCart() {
-    posCart = posCart.filter((c) => findProduct(c.id));
+    if (products.length) posCart = posCart.filter((c) => findProduct(c.id));
     const lines = cartLines(posCart);
     $("#posCartList").innerHTML = lines.length ? lines.map((c) => cartRowHTML(c, "pc")).join("")
-      : `<div class="empty"><span class="big">🧾</span>Belum ada barang. Klik mainan di kiri untuk menambah.</div>`;
+      : `<div class="empty"><span class="big">🧾</span>Belum ada barang. Klik mainan untuk menambah.</div>`;
     const total = posTotal();
     $("#posItemCount").textContent = fmtNum(lines.reduce((s, c) => s + c.qty, 0));
     $("#posTotal").textContent = fmtRp(total);
@@ -456,18 +575,20 @@
   (function drawQris() {
     let seed = 7;
     const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-    const finder = (r, c) => [[0, 0], [0, 9], [9, 0]].some(([fr, fc]) => r >= fr && r < fr + 4 && c >= fc && c < fc + 4);
-    const finderOn = (r, c) => {
-      for (const [fr, fc] of [[0, 0], [0, 9], [9, 0]]) {
+    const finders = [[0, 0], [0, 9], [9, 0]];
+    const finderCell = (r, c) => {
+      for (const [fr, fc] of finders) {
         if (r >= fr && r < fr + 4 && c >= fc && c < fc + 4) {
           const rr = r - fr, cc = c - fc;
-          return rr === 0 || rr === 3 || cc === 0 || cc === 3 || (rr === 1 && cc === 1) || (rr === 2 && cc === 2) || (rr === 1 && cc === 2) || (rr === 2 && cc === 1);
+          return rr === 0 || rr === 3 || cc === 0 || cc === 3 || (rr > 0 && rr < 3 && cc > 0 && cc < 3);
         }
       }
+      return null;
     };
     let html = "";
     for (let r = 0; r < 13; r++) for (let c = 0; c < 13; c++) {
-      const on = finder(r, c) ? finderOn(r, c) : rnd() > 0.5;
+      const f = finderCell(r, c);
+      const on = f === null ? rnd() > 0.5 : f;
       html += `<i class="${on ? "" : "w"}"></i>`;
     }
     $("#qrisCode").innerHTML = html;
@@ -479,35 +600,40 @@
     const over = lines.filter((c) => c.qty > c.p.stock);
     if (over.length) return toast(`Transaksi ditolak: ${over.map((c) => c.p.name).join(", ")} melebihi stok tersedia.`, "error");
     const total = posTotal();
-    let paid = total, change = 0;
+    let paid = total;
     if (ui.payMethod === "Tunai") {
       paid = parseMoney($("#cashInput").value);
       if (paid < total) return toast(`Uang diterima kurang ${fmtRp(total - paid)}.`, "error");
-      change = paid - total;
     }
     const ok = await confirmDialog("Proses transaksi?", `Total ${fmtRp(total)} dibayar via ${ui.payMethod}. Stok akan otomatis berkurang.`);
     if (!ok) return;
 
-    const now = new Date();
-    const tx = {
-      id: `INV-${dateKey(now).replace(/-/g, "")}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`,
-      date: now.toISOString(),
-      items: lines.map((c) => ({ id: c.id, name: c.p.name, price: c.p.price, qty: c.qty })),
-      total, method: ui.payMethod, paid, change,
-    };
-    // Hindari nomor nota ganda di detik yang sama
-    if (transactions.some((t) => t.id === tx.id)) tx.id += "-" + Math.random().toString(36).slice(2, 4).toUpperCase();
+    loading(true, "Menyimpan transaksi...");
+    try {
+      // Harga, stok, dan nomor nota dihitung ulang di server secara atomik
+      const { data, error } = await sb.rpc("process_sale", {
+        p_items: lines.map((c) => ({ id: c.id, qty: c.qty })),
+        p_method: ui.payMethod,
+        p_paid: paid,
+      });
+      if (error) throw error;
+      const tx = fromDbTx(data);
+      posCart = []; savePosCart();
+      $("#cashInput").value = "";
+      await loadProducts();
+      renderPOS(); updateLowBadge();
 
-    lines.forEach((c) => { c.p.stock -= c.qty; });
-    transactions.push(tx);
-    saveProducts(); saveTx();
-    posCart = []; savePosCart();
-    $("#cashInput").value = "";
-    renderPOS(); updateLowBadge();
-
-    const lowNow = lines.filter((c) => c.p.stock <= LOW_STOCK);
-    if (lowNow.length) toast(`Stok menipis: ${lowNow.map((c) => `${c.p.name} (${c.p.stock})`).join(", ")}`, "warn");
-    showReceipt(tx);
+      const lowNow = tx.items.map((i) => findProduct(i.id)).filter((p) => p && p.stock <= LOW_STOCK);
+      if (lowNow.length) toast(`Stok menipis: ${lowNow.map((p) => `${p.name} (${p.stock})`).join(", ")}`, "warn");
+      showReceipt(tx);
+    } catch (err) {
+      console.error(err);
+      toast("Transaksi gagal: " + errMsg(err), "error");
+      await loadProducts().catch(() => {});
+      renderPOS();
+    } finally {
+      loading(false);
+    }
   });
 
   function showReceipt(tx) {
@@ -519,6 +645,7 @@
       <hr>
       <div class="r-row"><span>No</span><span>${esc(tx.id)}</span></div>
       <div class="r-row"><span>Tanggal</span><span>${fmtDateTime(tx.date)}</span></div>
+      ${tx.cashier ? `<div class="r-row"><span>Kasir</span><span>${esc(tx.cashier)}</span></div>` : ""}
       <hr>
       ${tx.items.map((i) => `<div>${esc(i.name)}</div><div class="r-row"><span>${i.qty} x ${fmtRp(i.price)}</span><span>${fmtRp(i.qty * i.price)}</span></div>`).join("")}
       <hr>
@@ -537,7 +664,7 @@
       await sleep(350); // beri waktu indikator loading tampil
       const { jsPDF } = window.jspdf;
       const W = 80, M = 5, lh = 4.4;
-      const height = 78 + tx.items.length * lh * 2 + (tx.method === "Tunai" ? lh : 0);
+      const height = 82 + tx.items.length * lh * 2 + (tx.method === "Tunai" ? lh : 0);
       const doc = new jsPDF({ unit: "mm", format: [W, Math.max(height, 110)] });
       let y = 9;
       const center = (t, size = 8, bold = false) => { doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(size); doc.text(t, W / 2, y, { align: "center" }); y += lh; };
@@ -549,17 +676,16 @@
 
       doc.setFillColor(220, 38, 38); doc.rect(0, 0, W, 3, "F");
       center(settings.storeName.toUpperCase(), 13, true); y += 1;
-      doc.splitTextToSize(settings.address, W - 2 * M).forEach((t) => center(t));
+      doc.splitTextToSize(settings.address || "", W - 2 * M).forEach((t) => center(t));
       center("WA: " + settings.wa);
       line();
       row("No. Nota", tx.id);
       row("Tanggal", fmtDateTime(tx.date));
-      row("Kasir", "Kasir Indu Toys");
+      row("Kasir", doc.splitTextToSize(tx.cashier || "-", 45)[0]);
       line();
       tx.items.forEach((i) => {
         doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-        const name = doc.splitTextToSize(i.name, W - 2 * M)[0];
-        doc.text(name, M, y); y += lh;
+        doc.text(doc.splitTextToSize(i.name, W - 2 * M)[0], M, y); y += lh;
         row(`  ${i.qty} x ${fmtRp(i.price)}`, fmtRp(i.qty * i.price));
       });
       line();
@@ -584,7 +710,7 @@
   $("#printReceiptBtn").addEventListener("click", () => ui.lastTx && generateReceiptPDF(ui.lastTx));
 
   /* =========================================================
-     MODE KELOLA STOK
+     MODE KELOLA STOK (admin)
      ========================================================= */
   function renderStock() {
     const q = $("#stockSearch").value.trim().toLowerCase();
@@ -620,6 +746,7 @@
 
     $("#categoryList").innerHTML = categories().map((c) => `<option value="${esc(c)}">`).join("");
     updateLowBadge();
+    if ($("#usersPanel").open) renderUsers();
   }
 
   $("#stockSearch").addEventListener("input", renderStock);
@@ -629,18 +756,23 @@
     if (!t) return;
     const { stockInc, stockDec, edit, del } = t.dataset;
     if (stockInc || stockDec) {
-      const p = findProduct(stockInc || stockDec);
-      p.stock = Math.max(0, p.stock + (stockInc ? 1 : -1));
-      saveProducts(); renderStock();
+      const id = stockInc || stockDec;
+      t.disabled = true;
+      const { data, error } = await sb.rpc("adjust_stock", { p_id: id, p_delta: stockInc ? 1 : -1 });
+      if (error) { t.disabled = false; return toast("Gagal mengubah stok: " + errMsg(error), "error"); }
+      const p = findProduct(id);
+      if (p && data !== null) p.stock = data;
+      renderStock();
     } else if (edit) {
       openProductForm(findProduct(edit));
     } else if (del) {
       const p = findProduct(del);
-      if (await confirmDialog("Hapus mainan?", `"${p.name}" akan dihapus dari daftar produk. Riwayat penjualan tetap tersimpan.`)) {
-        products = products.filter((x) => x.id !== del);
-        saveProducts(); renderStock();
-        toast(`${p.name} dihapus.`);
-      }
+      if (!(await confirmDialog("Hapus mainan?", `"${p.name}" akan dihapus dari daftar produk. Riwayat penjualan tetap tersimpan.`))) return;
+      const { error } = await sb.from("products").delete().eq("id", del);
+      if (error) return toast("Gagal menghapus: " + errMsg(error), "error");
+      products = products.filter((x) => x.id !== del);
+      renderStock();
+      toast(`${p.name} dihapus.`);
     }
   });
 
@@ -655,8 +787,7 @@
     $("#pAge").value = p?.age || "";
     $("#pPrice").value = p?.price ?? "";
     $("#pStock").value = p?.stock ?? "";
-    $("#pImage").value = p?.image?.startsWith("data:") ? "" : (p?.image || "");
-    $("#pImage").dataset.upload = p?.image?.startsWith("data:") ? p.image : "";
+    $("#pImage").value = p?.image || "";
     $("#pDesc").value = p?.desc || "";
     $("#pImageFile").value = "";
     $("#pPreview").src = p?.image || "";
@@ -664,50 +795,78 @@
     setTimeout(() => $("#pName").focus(), 50);
   }
   $("#addProductBtn").addEventListener("click", () => openProductForm(null));
-  $("#pImage").addEventListener("input", (e) => { e.target.dataset.upload = ""; $("#pPreview").src = e.target.value; });
+  $("#pImage").addEventListener("input", (e) => { $("#pPreview").src = e.target.value; });
   $("#pPreview").addEventListener("error", (e) => { if (e.target.getAttribute("src")) e.target.src = PLACEHOLDER_IMG; });
-  $("#pImageFile").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    // Perkecil gambar agar tidak memenuhi LocalStorage
-    const reader = new FileReader();
-    reader.onload = () => {
+
+  // Perkecil gambar lalu unggah ke Supabase Storage
+  function resizeImage(file, maxSize = 800) {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        const scale = Math.min(1, 480 / Math.max(img.width, img.height));
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
         const cv = document.createElement("canvas");
-        cv.width = img.width * scale; cv.height = img.height * scale;
+        cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale);
         cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-        const data = cv.toDataURL("image/jpeg", 0.75);
-        $("#pImage").value = "";
-        $("#pImage").dataset.upload = data;
-        $("#pPreview").src = data;
+        URL.revokeObjectURL(img.src);
+        cv.toBlob((b) => (b ? resolve(b) : reject(new Error("Gagal memproses gambar."))), "image/jpeg", 0.8);
       };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
+      img.onerror = () => reject(new Error("File bukan gambar yang valid."));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  $("#pImageFile").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    loading(true, "Mengunggah gambar...");
+    try {
+      const blob = await resizeImage(file);
+      const path = `${uid("IMG")}.jpg`;
+      const { error } = await sb.storage.from(IMAGE_BUCKET).upload(path, blob, { contentType: "image/jpeg" });
+      if (error) throw error;
+      const url = sb.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+      $("#pImage").value = url;
+      $("#pPreview").src = url;
+      toast("Gambar berhasil diunggah 🖼️");
+    } catch (err) {
+      console.error(err);
+      toast("Gagal mengunggah gambar: " + errMsg(err), "error");
+      e.target.value = "";
+    } finally {
+      loading(false);
+    }
   });
-  $("#productForm").addEventListener("submit", (e) => {
+
+  $("#productForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = $("#pId").value;
     const data = {
       name: $("#pName").value.trim(),
       category: $("#pCategory").value.trim(),
       age: $("#pAge").value,
-      price: Math.max(0, Number($("#pPrice").value) || 0),
+      price: Math.max(0, Math.round(Number($("#pPrice").value) || 0)),
       stock: Math.max(0, parseInt($("#pStock").value, 10) || 0),
-      image: $("#pImage").dataset.upload || $("#pImage").value.trim(),
+      image: $("#pImage").value.trim(),
       desc: $("#pDesc").value.trim(),
     };
     if (!data.name || !data.category || !data.age) return toast("Lengkapi nama, kategori, dan usia.", "error");
-    const dup = products.find((p) => p.name.toLowerCase() === data.name.toLowerCase() && p.id !== id);
-    if (dup) return toast("Nama mainan sudah ada. Gunakan nama lain.", "error");
-    if (id) Object.assign(findProduct(id), data);
-    else products.push({ id: uid("P"), ...data });
-    saveProducts();
-    closeModals();
-    renderStock();
-    toast(id ? "Data mainan diperbarui ✏️" : "Mainan baru ditambahkan 🎉");
+    if (products.some((p) => p.name.toLowerCase() === data.name.toLowerCase() && p.id !== id)) return toast("Nama mainan sudah ada. Gunakan nama lain.", "error");
+
+    loading(true, "Menyimpan mainan...");
+    try {
+      const { error } = id
+        ? await sb.from("products").update(toDbProduct(data)).eq("id", id)
+        : await sb.from("products").insert({ id: uid("P"), ...toDbProduct(data) });
+      if (error) throw error;
+      await loadProducts();
+      closeModals();
+      renderStock();
+      toast(id ? "Data mainan diperbarui ✏️" : "Mainan baru ditambahkan 🎉");
+    } catch (err) {
+      console.error(err);
+      toast("Gagal menyimpan: " + errMsg(err), "error");
+    } finally {
+      loading(false);
+    }
   });
 
   /* ---------- IMPOR / EKSPOR ---------- */
@@ -738,13 +897,13 @@
 
   $$("[data-export-products]").forEach((b) => b.addEventListener("click", () => {
     if (!requireXLSX()) return;
-    const rows = products.map((p) => Object.fromEntries(Object.entries(PRODUCT_COLS).map(([label, key]) => [label, key === "image" && p.image?.startsWith("data:") ? "" : p[key]])));
+    const rows = products.map((p) => Object.fromEntries(Object.entries(PRODUCT_COLS).map(([label, key]) => [label, p[key]])));
     downloadSheet(rows, `Produk-InduToys-${dateKey(new Date())}`, b.dataset.exportProducts, "Produk");
     toast(`Data ${products.length} produk diekspor ⬇️`);
   }));
   $("#templateBtn").addEventListener("click", () => {
     if (!requireXLSX()) return;
-    downloadSheet([{ Nama: "Contoh Mobil Mainan", Kategori: "Kendaraan", Usia: "3-5 tahun", Harga: 50000, Stok: 10, Gambar: "https://...", Deskripsi: "Deskripsi singkat" }], "Template-Impor-InduToys", "csv", "Produk");
+    downloadSheet([{ Nama: "Contoh Mobil Mainan", Kategori: "Kendaraan", Usia: "3-5 tahun", Harga: 50000, Stok: 10, Gambar: "", Deskripsi: "Deskripsi singkat" }], "Template-Impor-InduToys", "csv", "Produk");
   });
 
   function normalizeAge(v) {
@@ -762,42 +921,42 @@
     if (!file || !requireXLSX()) return;
     loading(true, `Mengimpor ${file.name}...`);
     try {
-      const buf = await file.arrayBuffer();
-      await sleep(300);
-      const wb = XLSX.read(buf, { type: "array" });
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
       const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
       if (!raw.length) throw new Error("File kosong atau tidak memiliki baris data.");
-      let added = 0, updated = 0, skipped = 0;
+      const upserts = new Map(); // kunci: nama huruf kecil (baris terakhir menang)
+      let skipped = 0;
       raw.forEach((r) => {
         const row = {};
         Object.entries(r).forEach(([k, v]) => { const key = HEADER_ALIASES[k.trim().toLowerCase()]; if (key) row[key] = v; });
         const name = String(row.name || "").trim();
         if (!name) { skipped++; return; }
+        const existing = (row.id && findProduct(String(row.id).trim())) || products.find((p) => p.name.toLowerCase() === name.toLowerCase());
         const data = {
           name,
-          category: String(row.category || "Lainnya").trim(),
-          age: normalizeAge(row.age),
+          category: String(row.category || "").trim() || existing?.category || "Lainnya",
+          age: row.age ? normalizeAge(row.age) : existing?.age || AGES[1],
           price: parseMoney(row.price),
           stock: Math.max(0, parseInt(row.stock, 10) || 0),
-          image: String(row.image || "").trim().replace(/^https:\/\/\.\.\.$/, ""),
-          desc: String(row.desc || "").trim(),
+          image: String(row.image || "").trim() || existing?.image || "",
+          desc: String(row.desc || "").trim() || existing?.desc || "",
         };
-        const existing = (row.id && findProduct(String(row.id))) || products.find((p) => p.name.toLowerCase() === name.toLowerCase());
-        if (existing) {
-          Object.assign(existing, data, { image: data.image || existing.image, desc: data.desc || existing.desc });
-          updated++;
-        } else {
-          products.push({ id: uid("P"), ...data });
-          added++;
-        }
+        upserts.set(name.toLowerCase(), { id: existing?.id || upserts.get(name.toLowerCase())?.id || uid("P"), ...toDbProduct(data), _new: !existing });
       });
-      if (!added && !updated) throw new Error("Tidak ada baris valid. Pastikan ada kolom 'Nama'.");
-      saveProducts();
+      const rows = [...upserts.values()];
+      if (!rows.length) throw new Error("Tidak ada baris valid. Pastikan ada kolom 'Nama'.");
+      const added = rows.filter((r) => r._new).length;
+      rows.forEach((r) => delete r._new);
+      for (let i = 0; i < rows.length; i += 500) {
+        const { error } = await sb.from("products").upsert(rows.slice(i, i + 500), { onConflict: "id" });
+        if (error) throw error;
+      }
+      await loadProducts();
       renderStock();
-      toast(`Impor selesai: ${added} baru, ${updated} diperbarui${skipped ? `, ${skipped} dilewati` : ""} ✅`);
+      toast(`Impor selesai: ${added} baru, ${rows.length - added} diperbarui${skipped ? `, ${skipped} dilewati` : ""} ✅`);
     } catch (err) {
       console.error(err);
-      toast("Gagal impor: " + err.message, "error");
+      toast("Gagal impor: " + errMsg(err), "error");
     } finally {
       loading(false);
     }
@@ -811,26 +970,57 @@
     $("#setBank").value = settings.bank;
     $("#bankText").textContent = settings.bank;
   }
-  $("#settingsForm").addEventListener("submit", (e) => {
+  $("#settingsForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    settings = {
+    const next = {
       storeName: $("#setStoreName").value.trim() || DEFAULT_SETTINGS.storeName,
       wa: $("#setWa").value.replace(/\D/g, ""),
       address: $("#setAddress").value.trim(),
       bank: $("#setBank").value.trim(),
     };
-    store.set(KEYS.settings, settings);
+    const { error } = await sb.from("settings")
+      .update({ store_name: next.storeName, wa: next.wa, address: next.address, bank: next.bank, updated_at: new Date().toISOString() })
+      .eq("id", 1);
+    if (error) return toast("Gagal menyimpan pengaturan: " + errMsg(error), "error");
+    settings = next;
     fillSettings();
     toast("Pengaturan toko disimpan 💾");
   });
-  $("#resetDataBtn").addEventListener("click", async () => {
-    if (!(await confirmDialog("Reset semua data?", "Produk, transaksi, keranjang, dan pengaturan akan dikembalikan ke data awal. Tindakan ini tidak bisa dibatalkan."))) return;
-    Object.values(KEYS).forEach((k) => { try { localStorage.removeItem(k); } catch {} });
-    location.reload();
+
+  /* ---------- PENGGUNA & PERAN ---------- */
+  async function renderUsers() {
+    const tbody = $("#usersTable tbody");
+    const { data, error } = await sb.from("profiles").select("*").order("created_at");
+    if (error) { tbody.innerHTML = `<tr><td colspan="3">${esc(errMsg(error))}</td></tr>`; return; }
+    tbody.innerHTML = data.map((u) => `
+      <tr>
+        <td><b>${esc(u.full_name || u.email)}</b>${u.full_name ? `<div class="muted">${esc(u.email)}</div>` : ""}${u.user_id === session?.user.id ? ' <span class="badge badge-cat">kamu</span>' : ""}</td>
+        <td>${fmtDateTime(u.created_at)}</td>
+        <td>
+          <select class="role-select" data-user-role="${u.user_id}">
+            ${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${u.role === k ? "selected" : ""}>${v}</option>`).join("")}
+          </select>
+        </td>
+      </tr>`).join("");
+  }
+  $("#usersPanel").addEventListener("toggle", (e) => { if (e.target.open) renderUsers(); });
+  $("#usersTable").addEventListener("change", async (e) => {
+    const sel = e.target.closest("[data-user-role]");
+    if (!sel) return;
+    const userId = sel.dataset.userRole;
+    if (userId === session?.user.id && sel.value !== "admin" &&
+        !(await confirmDialog("Turunkan peranmu sendiri?", "Kamu akan kehilangan akses admin dan tidak bisa mengembalikannya sendiri."))) {
+      sel.value = "admin";
+      return;
+    }
+    const { error } = await sb.from("profiles").update({ role: sel.value }).eq("user_id", userId);
+    if (error) { toast("Gagal mengubah peran: " + errMsg(error), "error"); return renderUsers(); }
+    toast(`Peran diubah menjadi ${ROLES[sel.value]} ✅`);
+    if (userId === session?.user.id) { await loadProfile(); renderAuth(); renderView(); }
   });
 
   /* =========================================================
-     LAPORAN PENJUALAN
+     LAPORAN PENJUALAN (admin)
      ========================================================= */
   function periodRange() {
     const now = new Date();
@@ -853,8 +1043,33 @@
     const [from, to] = periodRange();
     return transactions.filter((t) => { const d = new Date(t.date); return d >= from && d <= to; });
   };
+  // Ambil cukup data untuk periode terpilih + jendela grafik (31 hari / 12 bulan)
+  function fetchSince() {
+    if (ui.reportPeriod === "all") return null;
+    const now = new Date();
+    const chartStart = ui.recapMode === "monthly"
+      ? new Date(now.getFullYear(), now.getMonth() - 11, 1)
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate() - 31);
+    const [from, to] = periodRange();
+    const customChart = new Date(to); customChart.setDate(customChart.getDate() - 31);
+    return new Date(Math.min(+from, +chartStart, +customChart));
+  }
+  async function refreshTransactions() {
+    await loadTransactions(fetchSince());
+  }
 
-  function renderReport() {
+  async function renderReport() {
+    const token = ++ui.reportToken;
+    $("#txTable tbody").innerHTML = `<tr><td colspan="6"><div class="empty">⏳ Memuat data penjualan...</div></td></tr>`;
+    try {
+      await refreshTransactions();
+    } catch (err) {
+      console.error(err);
+      if (token === ui.reportToken) $("#txTable tbody").innerHTML = `<tr><td colspan="6"><div class="empty">⚠️ ${esc(errMsg(err))}</div></td></tr>`;
+      return;
+    }
+    if (token !== ui.reportToken || ui.view !== "report") return;
+
     const list = txInPeriod().sort((a, b) => b.date.localeCompare(a.date));
     const revenue = list.reduce((s, t) => s + t.total, 0);
     const items = list.reduce((s, t) => s + t.items.reduce((x, i) => x + i.qty, 0), 0);
@@ -886,7 +1101,7 @@
     // Riwayat
     $("#txTable tbody").innerHTML = list.length ? list.map((t) => `
       <tr>
-        <td><b>${esc(t.id)}</b></td>
+        <td><b>${esc(t.id)}</b>${t.cashier ? `<div class="muted">${esc(t.cashier)}</div>` : ""}</td>
         <td>${fmtDateTime(t.date)}</td>
         <td>${t.items.map((i) => `${esc(i.name)} ×${i.qty}`).join("<br>")}</td>
         <td>${esc(t.method)}</td>
@@ -909,7 +1124,7 @@
       for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) buckets.set(dateKey(d), 0);
       transactions.forEach((t) => { const k = dateKey(new Date(t.date)); if (buckets.has(k)) buckets.set(k, buckets.get(k) + t.total); });
     } else {
-      // 12 bulan terakhir (semua transaksi)
+      // 12 bulan terakhir
       for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); buckets.set(monthKey(d), 0); }
       transactions.forEach((t) => { const k = monthKey(new Date(t.date)); if (buckets.has(k)) buckets.set(k, buckets.get(k) + t.total); });
     }
@@ -952,41 +1167,71 @@
     if (b) generateReceiptPDF(transactions.find((t) => t.id === b.dataset.reprint));
   });
 
-  $$("[data-export-sales]").forEach((b) => b.addEventListener("click", () => {
+  $$("[data-export-sales]").forEach((b) => b.addEventListener("click", async () => {
     if (!requireXLSX()) return;
-    const list = txInPeriod().sort((a, b) => a.date.localeCompare(b.date));
-    if (!list.length) return toast("Tidak ada transaksi pada periode ini untuk diekspor.", "warn");
-    const rows = [];
-    list.forEach((t) => t.items.forEach((i) => rows.push({
-      "No. Nota": t.id,
-      Tanggal: dateKey(new Date(t.date)),
-      Jam: new Date(t.date).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
-      Produk: i.name,
-      Qty: i.qty,
-      "Harga Satuan": i.price,
-      Subtotal: i.qty * i.price,
-      "Total Nota": t.total,
-      "Metode Bayar": t.method,
-    })));
-    downloadSheet(rows, `Penjualan-InduToys-${dateKey(new Date())}`, b.dataset.exportSales, "Penjualan");
-    toast(`${list.length} transaksi diekspor ⬇️`);
+    loading(true, "Menyiapkan file ekspor...");
+    try {
+      await refreshTransactions();
+      const list = txInPeriod().sort((a, b) => a.date.localeCompare(b.date));
+      if (!list.length) return toast("Tidak ada transaksi pada periode ini untuk diekspor.", "warn");
+      const rows = [];
+      list.forEach((t) => t.items.forEach((i) => rows.push({
+        "No. Nota": t.id,
+        Tanggal: dateKey(new Date(t.date)),
+        Jam: new Date(t.date).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+        Kasir: t.cashier,
+        Produk: i.name,
+        Qty: i.qty,
+        "Harga Satuan": i.price,
+        Subtotal: i.qty * i.price,
+        "Total Nota": t.total,
+        "Metode Bayar": t.method,
+      })));
+      downloadSheet(rows, `Penjualan-InduToys-${dateKey(new Date())}`, b.dataset.exportSales, "Penjualan");
+      toast(`${list.length} transaksi diekspor ⬇️`);
+    } catch (err) {
+      toast("Gagal ekspor: " + errMsg(err), "error");
+    } finally {
+      loading(false);
+    }
   }));
 
-  /* ---------- SINKRON ANTAR TAB ---------- */
+  /* ---------- REALTIME: stok & produk dari perangkat lain ---------- */
+  let rtTimer;
+  sb.channel("products-live")
+    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => {
+      clearTimeout(rtTimer);
+      rtTimer = setTimeout(async () => {
+        try { await loadProducts(); } catch { return; }
+        updateLowBadge();
+        if (!anyModalOpen() && ui.view !== "report") renderView();
+      }, 500);
+    })
+    .subscribe();
+
+  // Keranjang antar tab di perangkat yang sama
   window.addEventListener("storage", (e) => {
-    if (!Object.values(KEYS).includes(e.key)) return;
-    products = store.get(KEYS.products, products);
-    transactions = store.get(KEYS.transactions, transactions);
-    catalogCart = store.get(KEYS.catalogCart, catalogCart);
-    posCart = store.get(KEYS.posCart, posCart);
-    settings = { ...DEFAULT_SETTINGS, ...store.get(KEYS.settings, {}) };
-    fillSettings(); updateLowBadge(); renderView();
+    if (e.key === KEYS.catalogCart) catalogCart = store.get(KEYS.catalogCart, []);
+    else if (e.key === KEYS.posCart) posCart = store.get(KEYS.posCart, []);
+    else return;
+    if (ui.view === "catalog" || ui.view === "pos") renderView();
   });
 
   /* ---------- INIT ---------- */
   $("#year").textContent = new Date().getFullYear();
+  loading(true, "Memuat data toko...");
+  try {
+    const [{ data: sess }] = await Promise.all([sb.auth.getSession(), loadSettings(), loadProducts()]);
+    session = sess.session;
+    await loadProfile();
+  } catch (err) {
+    console.error(err);
+    toast("Gagal memuat data: " + errMsg(err), "error");
+  } finally {
+    loading(false);
+  }
   fillSettings();
-  updateLowBadge();
+  renderAuth();
   const startView = location.hash.slice(1);
   setView(TITLES[startView] ? startView : "catalog");
 })();

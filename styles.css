@@ -104,7 +104,22 @@ img { max-width: 100%; display: block; }
 }
 .nav-item.active .nav-badge { background: var(--red); color: #fff; }
 
-.sidebar-foot { margin-top: auto; }
+.nav-item.locked::after { content: "🔒"; margin-left: auto; font-size: .85rem; opacity: .8; }
+.nav-item.locked .nav-badge { display: none; }
+
+.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+.user-box {
+  background: rgba(0,0,0,.15); border-radius: 16px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 6px; font-size: .85rem;
+}
+.user-box .user-email { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-box .user-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.user-box .role-tag { background: var(--yellow); color: #7C2D12; border-radius: 99px; padding: 1px 10px; font-weight: 600; font-size: .75rem; }
+.user-box button {
+  border: 0; border-radius: 12px; padding: 8px 10px; font-weight: 600;
+  background: var(--yellow); color: #7C2D12;
+}
+.user-box button.link { background: transparent; color: var(--sidebar-text); text-decoration: underline; padding: 0; }
 .theme-switch {
   display: flex; align-items: center; gap: 8px; justify-content: center;
   background: rgba(0,0,0,.15); padding: 10px; border-radius: 16px; cursor: pointer;
@@ -354,6 +369,13 @@ textarea { resize: vertical; }
 .stock-adj { display: inline-flex; align-items: center; gap: 6px; }
 .stock-adj button { width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--border); background: var(--surface); font-weight: 700; line-height: 1; }
 .table .muted { color: var(--muted); font-size: .82rem; }
+
+.locked-card { max-width: 520px; margin: 40px auto; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 32px 24px; }
+.locked-card .big { font-size: 3.4rem; }
+.locked-card p { margin: 0 0 8px; color: var(--muted); }
+.muted-text { color: var(--muted); font-size: .9rem; margin: 0 0 12px; }
+.form-grid.one { grid-template-columns: 1fr; }
+.role-select { width: auto !important; padding: 6px 10px !important; }
 
 .settings summary { cursor: pointer; font-weight: 600; font-size: 1.05rem; }
 .settings[open] summary { margin-bottom: 14px; }

@@ -31,6 +31,7 @@
       </nav>
 
       <div class="sidebar-foot">
+        <div class="user-box" id="userBox"></div>
         <label class="theme-switch">
           <span class="theme-label">☀️ Terang</span>
           <input type="checkbox" id="themeToggle" />
@@ -53,6 +54,16 @@
           </button>
         </div>
       </header>
+
+      <!-- ===== VIEW: TERKUNCI ===== -->
+      <section class="view" id="view-locked">
+        <div class="card locked-card">
+          <span class="big">🔒</span>
+          <h2 id="lockedTitle">Khusus staf</h2>
+          <p id="lockedText"></p>
+          <button class="btn btn-red btn-lg" id="lockedLoginBtn">🔑 Masuk Staf</button>
+        </div>
+      </section>
 
       <!-- ===== VIEW: KATALOG ===== -->
       <section class="view active" id="view-catalog">
@@ -198,9 +209,19 @@
             <div class="field"><label for="setBank">Info rekening transfer</label><input id="setBank" /></div>
             <div class="form-actions">
               <button type="submit" class="btn btn-red">💾 Simpan Pengaturan</button>
-              <button type="button" class="btn btn-ghost danger-text" id="resetDataBtn">Reset semua data</button>
             </div>
           </form>
+        </details>
+
+        <details class="card settings" id="usersPanel">
+          <summary>👥 Pengguna & Peran Staf</summary>
+          <p class="muted-text">Tambah akun staf di Supabase Dashboard → Authentication → Users → <b>Add user</b>. Akun baru berstatus <b>Menunggu</b> sampai kamu beri peran di sini.</p>
+          <div class="table-wrap">
+            <table class="table" id="usersTable">
+              <thead><tr><th>Email</th><th>Terdaftar</th><th>Peran</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </details>
       </section>
 
@@ -337,6 +358,25 @@
     </div>
   </div>
 
+  <!-- ===== MODAL LOGIN ===== -->
+  <div class="modal" id="loginModal" hidden>
+    <div class="modal-card narrow">
+      <div class="modal-head">
+        <h3>🔑 Masuk Staf</h3>
+        <button class="icon-btn" data-close-modal aria-label="Tutup">✕</button>
+      </div>
+      <form id="loginForm" class="form-grid one">
+        <div class="field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="username" required /></div>
+        <div class="field"><label for="loginPassword">Kata sandi</label><input id="loginPassword" type="password" autocomplete="current-password" required minlength="6" /></div>
+        <div class="alert alert-warn" id="loginError" hidden></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal>Batal</button>
+          <button type="submit" class="btn btn-red" id="loginSubmit">Masuk</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ===== MODAL KONFIRMASI ===== -->
   <div class="modal" id="confirmModal" hidden>
     <div class="modal-card narrow">
@@ -360,6 +400,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
