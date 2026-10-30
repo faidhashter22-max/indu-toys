@@ -60,14 +60,13 @@
         <a class="shop-logo" href="/" aria-label="Indu Toy — Beranda"><img src="/assets/logo.png" alt="Indu Toy" /></a>
         <nav class="shop-links">
           <a href="#hero" data-scroll="hero">Beranda</a>
-          <a href="#categories" data-scroll="categories">Kategori</a>
           <a href="#featured" data-scroll="featured">Mainan</a>
           <a class="chat-store-link" href="#" target="_blank" rel="noopener">Chat WA</a>
         </nav>
         <div class="shop-actions">
           <button class="icon-btn theme-btn" id="themeBtnShop" aria-label="Ganti mode terang/gelap">🌙</button>
           <button class="btn btn-red cart-fab" id="openCartBtn" data-show-on="catalog">
-            🛒 <span class="cart-label">Keranjang</span> <span class="pill" id="catalogCartCount">0</span>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2.5 3h2.6l2.4 11.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.2L21 7H6.1"/></svg> <span class="cart-label">Keranjang</span> <span class="pill" id="catalogCartCount">0</span>
           </button>
         </div>
       </header>
@@ -122,10 +121,6 @@
           </div>
         </div>
 
-        <section class="shop-section" id="categories">
-          <div class="section-head"><h3>Jelajahi Kategori</h3></div>
-          <div class="cat-cards" id="catChips"></div>
-        </section>
 
         <section class="shop-section" id="featured">
           <div class="section-head">
@@ -345,7 +340,7 @@
   <div class="drawer-backdrop" id="cartBackdrop"></div>
   <aside class="drawer" id="cartDrawer" aria-label="Keranjang belanja">
     <div class="drawer-head">
-      <h3>🛒 Keranjang Belanja</h3>
+      <h3 class="drawer-title"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2.5 3h2.6l2.4 11.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.2L21 7H6.1"/></svg> Keranjang Belanja</h3>
       <button class="icon-btn" id="closeCartBtn" aria-label="Tutup">✕</button>
     </div>
     <div class="drawer-body" id="catalogCartList"></div>

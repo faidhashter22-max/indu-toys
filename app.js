@@ -115,7 +115,6 @@
 
   const ui = {
     view: "catalog",
-    catCategory: "all",
     catTab: "all",
     payMethod: "Tunai",
     reportPeriod: "today",
@@ -345,30 +344,19 @@
   let favorites = new Set(store.get(KEYS.favorites, []));
   const saveFavorites = () => store.set(KEYS.favorites, [...favorites]);
 
+  const ICON_CART_PLUS = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2.5 3h2.6l2.4 11.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.2L21 7H6.1"/><path d="M13.6 8.6v4.4M11.4 10.8h4.4"/></svg>`;
+
   function renderCatalog() {
-    const cats = categories();
-    if (ui.catCategory !== "all" && !cats.includes(ui.catCategory)) ui.catCategory = "all";
-
-    const countBy = (c) => c === "all" ? products.length : products.filter((p) => p.category === c).length;
-    $("#catChips").innerHTML = ["all", ...cats].map((c) => `
-      <button class="cat-card ${ui.catCategory === c ? "active" : ""}" data-chip="${esc(c)}">
-        <span class="cat-ico">${c === "all" ? "✨" : categoryIcon(c)}</span>
-        <b>${c === "all" ? "Semua" : esc(c)}</b>
-        <small>${countBy(c)} mainan</small>
-      </button>`).join("");
-
     const q = $("#catSearch").value.trim().toLowerCase();
     const priceSel = $("#catPrice");
     const [min, max] = priceSel.value === "all" ? [0, Infinity] : priceSel.value.split("-").map(Number);
     const list = products.filter((p) =>
       (!q || p.name.toLowerCase().includes(q)) &&
-      (ui.catCategory === "all" || p.category === ui.catCategory) &&
       (ui.catTab !== "fav" || favorites.has(p.id)) &&
       p.price >= min && p.price <= max).sort(SORTERS[$("#catSort").value] || SORTERS.name);
 
     // Jejak filter aktif
     const parts = [];
-    if (ui.catCategory !== "all") parts.push(esc(ui.catCategory));
     if (priceSel.value !== "all") parts.push(esc(priceSel.selectedOptions[0].textContent));
     if (q) parts.push(`“${esc(q)}”`);
     if (ui.catTab === "fav") parts.push("Favorit");
@@ -391,8 +379,8 @@
             <div class="pb-row"><h4>${esc(p.name)}</h4><span class="price">${fmtRp(p.price)}</span></div>
             <div class="pb-meta">${categoryIcon(p.category)} ${esc(p.category)}</div>
             <div class="pb-foot">
-              <span class="stock-txt">${soldOut ? "Stok habis" : `Stok ${p.stock} pcs`}${inCart ? ` · <span class="in-cart">🛒 ${inCart} di keranjang</span>` : ""}</span>
-              <button class="add-btn" data-add-catalog="${p.id}" ${soldOut ? "disabled" : ""} aria-label="Tambah ${esc(p.name)} ke keranjang" title="Tambah ke keranjang">🛒</button>
+              <span class="stock-txt">${soldOut ? "Stok habis" : `Stok ${p.stock} pcs`}${inCart ? ` · <span class="in-cart">${inCart} di keranjang</span>` : ""}</span>
+              <button class="add-btn" data-add-catalog="${p.id}" ${soldOut ? "disabled" : ""} aria-label="Tambah ${esc(p.name)} ke keranjang" title="Tambah ke keranjang">${ICON_CART_PLUS}</button>
             </div>
           </div>
         </article>`;
@@ -410,10 +398,6 @@
   $("#catSearch").addEventListener("input", renderCatalog);
   $("#catSearch").addEventListener("keydown", (e) => { if (e.key === "Enter") scrollToSection("featured"); });
   ["#catPrice", "#catSort"].forEach((s) => $(s).addEventListener("change", renderCatalog));
-  $("#catChips").addEventListener("click", (e) => {
-    const c = e.target.closest("[data-chip]");
-    if (c) { ui.catCategory = c.dataset.chip; renderCatalog(); scrollToSection("featured"); }
-  });
   $("#catTabs").addEventListener("click", (e) => {
     const b = e.target.closest("[data-tab]");
     if (!b) return;
@@ -422,7 +406,7 @@
     renderCatalog();
   });
   $("#catReset").addEventListener("click", () => {
-    $("#catSearch").value = ""; $("#catPrice").value = "all"; ui.catCategory = "all";
+    $("#catSearch").value = ""; $("#catPrice").value = "all";
     ui.catTab = "all"; $$("#catTabs button").forEach((x) => x.classList.toggle("active", x.dataset.tab === "all"));
     renderCatalog();
   });

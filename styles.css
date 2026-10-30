@@ -374,23 +374,6 @@ textarea { resize: vertical; }
 .crumbs { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: .9rem; font-weight: 600; margin-bottom: 16px; }
 .crumbs b { color: var(--text); }
 
-.cat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
-.cat-card {
-  border: 1.5px solid transparent; background: var(--surface); border-radius: 22px; padding: 16px 12px;
-  display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
-  box-shadow: var(--shadow); transition: transform .2s, border-color .2s, box-shadow .2s;
-}
-.cat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-.cat-card.active { border-color: var(--red); background: linear-gradient(180deg, var(--tint-r), var(--surface)); }
-.cat-ico {
-  width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; font-size: 1.8rem;
-  background: var(--tint-y); transform: rotate(-4deg);
-}
-.cat-card:nth-child(4n+2) .cat-ico { background: var(--tint-r); transform: rotate(4deg); }
-.cat-card:nth-child(4n+3) .cat-ico { background: var(--tint-o); }
-.cat-card:nth-child(4n+4) .cat-ico { background: var(--tint-c); transform: rotate(3deg); }
-.cat-card b { font-family: var(--font-head); font-weight: 600; font-size: 1rem; }
-.cat-card small { color: var(--muted); font-size: .78rem; }
 
 /* ============ KARTU PRODUK ============ */
 .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 22px; }
@@ -650,8 +633,6 @@ textarea { resize: vertical; }
   .sp-ico { width: 30px; height: 30px; font-size: .85rem; }
   .shop-section { padding: 4px 16px 20px; }
   .section-head h3 { font-size: 1.3rem; }
-  .cat-cards { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
-  .cat-card { flex: 0 0 120px; scroll-snap-align: start; }
   .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .product { padding: 7px; border-radius: 20px; }
   .product-img { border-radius: 15px; }
@@ -668,3 +649,10 @@ textarea { resize: vertical; }
   .toolbar-actions .btn { width: 100%; }
   .bg-deco .d1, .bg-deco .d6, .bg-deco .d8 { display: none; }
 }
+
+/* ============ IKON SVG ============ */
+.ico { width: 1.25em; height: 1.25em; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.add-btn .ico { width: 22px; height: 22px; }
+.cart-fab .ico { width: 20px; height: 20px; }
+.drawer-title { display: flex; align-items: center; gap: 8px; }
+.drawer-title .ico { color: var(--red); width: 24px; height: 24px; }
