@@ -1,0 +1,4 @@
+# File pengembangan yang tidak perlu ikut di-deploy
+dev-server.js
+README.md
+supabase/

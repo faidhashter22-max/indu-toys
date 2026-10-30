@@ -43,5 +43,6 @@ Lalu buka **http://localhost:5500** (pembeli) dan **http://localhost:5500/staff*
 
 ## Deploy ke Vercel
 
-Impor repo ini di Vercel → Framework Preset **Other**, tanpa build command → **Deploy**.
+Sudah ter-deploy di **https://indutoy-store.vercel.app** (pelanggan) dan **https://indutoy-store.vercel.app/staff** (staf).
+Setiap push ke `main` otomatis di-deploy ulang. Untuk proyek baru: impor repo di Vercel → preset **Other**, tanpa build command → **Deploy**.
 Link `/staff` diatur oleh `vercel.json`, jadi otomatis jalan setelah deploy.
