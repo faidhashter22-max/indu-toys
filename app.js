@@ -145,6 +145,13 @@
     $("#openCartBtn").hidden = true;
     $$(".view").forEach((v) => v.classList.remove("active"));
     $$(".nav-item").forEach((b) => b.classList.remove("active"));
+    // Pustaka PDF & Excel hanya dibutuhkan staf; halaman pelanggan tidak ikut memuatnya
+    ["/vendor/jspdf-2.5.1.umd.min.js", "/vendor/xlsx-0.18.5.full.min.js"].forEach((src) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = true;
+      document.head.appendChild(s);
+    });
   }
 
   /* ---------- DATA LAYER ---------- */
