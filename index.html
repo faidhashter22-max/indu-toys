@@ -7,20 +7,29 @@
   <meta name="description" content="Katalog, kasir POS, kelola stok, dan laporan penjualan toko mainan Indu Toys." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23DC2626'/><text x='50' y='68' font-size='52' text-anchor='middle'>🧸</text></svg>" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" type="image/png" href="/assets/logo-icon.png" />
 </head>
 <body>
+  <!-- Dekorasi mainan 3D melayang di latar -->
+  <div class="bg-deco" aria-hidden="true">
+    <i class="shape ring ring-yellow d1"></i>
+    <i class="shape ring ring-red d2"></i>
+    <i class="shape sphere sphere-red d3"></i>
+    <i class="shape sphere sphere-yellow d4"></i>
+    <i class="shape sphere sphere-orange d5"></i>
+    <i class="shape ring ring-orange d6"></i>
+    <i class="shape sphere sphere-yellow d7"></i>
+    <i class="shape blob d8"></i>
+  </div>
+
   <div class="app">
-    <!-- ===== SIDEBAR ===== -->
+    <!-- ===== SIDEBAR (panel staf) ===== -->
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="brand-logo">🧸</div>
-        <div class="brand-text">
-          <span class="brand-name"><span class="b-red">Indu</span> <span class="b-yellow">Toys</span></span>
-          <small>Toko Mainan Serba Ada</small>
-        </div>
+        <img class="brand-img" src="/assets/logo.png" alt="Indu Toy" />
+        <small id="brandTagline">Toko Mainan Serba Ada</small>
       </div>
 
       <nav class="nav">
@@ -28,6 +37,7 @@
         <button class="nav-item" data-view="pos"><span class="nav-ico">🧾</span><span>Kasir / POS</span></button>
         <button class="nav-item" data-view="stock"><span class="nav-ico">📦</span><span>Kelola Stok</span><span class="nav-badge" id="navLowBadge" hidden>0</span></button>
         <button class="nav-item" data-view="report"><span class="nav-ico">📊</span><span>Laporan Penjualan</span></button>
+        <a class="nav-item staff-only" href="/" target="_blank" rel="noopener"><span class="nav-ico">🛍️</span><span>Buka Toko Online ↗</span></a>
       </nav>
 
       <div class="sidebar-foot">
@@ -38,26 +48,40 @@
           <span class="slider"></span>
           <span class="theme-label">🌙 Gelap</span>
         </label>
-        <p class="copyright">© <span id="year"></span> Indu Toys</p>
+        <p class="copyright">© <span class="year"></span> Indu Toy</p>
       </div>
     </aside>
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <!-- ===== MAIN ===== -->
     <main class="main">
+      <!-- Navbar toko (link pembeli) -->
+      <header class="shop-nav">
+        <a class="shop-logo" href="/" aria-label="Indu Toy — Beranda"><img src="/assets/logo.png" alt="Indu Toy" /></a>
+        <nav class="shop-links">
+          <a href="#hero" data-scroll="hero">Beranda</a>
+          <a href="#categories" data-scroll="categories">Kategori</a>
+          <a href="#featured" data-scroll="featured">Mainan</a>
+          <a class="chat-store-link" href="#" target="_blank" rel="noopener">Chat WA</a>
+        </nav>
+        <div class="shop-actions">
+          <button class="icon-btn theme-btn" id="themeBtnShop" aria-label="Ganti mode terang/gelap">🌙</button>
+          <button class="btn btn-red cart-fab" id="openCartBtn" data-show-on="catalog">
+            🛒 <span class="cart-label">Keranjang</span> <span class="pill" id="catalogCartCount">0</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Topbar panel staf -->
       <header class="topbar">
         <button class="icon-btn menu-btn" id="menuBtn" aria-label="Buka menu">☰</button>
         <h1 id="pageTitle">Katalog Mainan</h1>
-        <div class="topbar-actions">
-          <button class="btn btn-red cart-fab" id="openCartBtn" data-show-on="catalog">
-            🛒 Keranjang <span class="pill" id="catalogCartCount">0</span>
-          </button>
-        </div>
       </header>
 
       <!-- ===== VIEW: TERKUNCI ===== -->
       <section class="view" id="view-locked">
         <div class="card locked-card">
+          <img class="locked-logo" src="/assets/logo.png" alt="Indu Toy" />
           <span class="big">🔒</span>
           <h2 id="lockedTitle">Khusus staf</h2>
           <p id="lockedText"></p>
@@ -67,42 +91,68 @@
 
       <!-- ===== VIEW: KATALOG ===== -->
       <section class="view active" id="view-catalog">
-        <div class="hero">
-          <div>
-            <h2>Halo, selamat datang di Indu Toys! 🎈</h2>
-            <p>Pilih mainan favorit si kecil, masukkan ke keranjang, lalu pesan langsung lewat WhatsApp.</p>
+        <div class="hero" id="hero">
+          <i class="shape ring ring-yellow h1" aria-hidden="true"></i>
+          <i class="shape sphere sphere-red h2" aria-hidden="true"></i>
+          <i class="shape ring ring-red h3" aria-hidden="true"></i>
+          <i class="shape sphere sphere-yellow h4" aria-hidden="true"></i>
+
+          <img class="hero-logo" src="/assets/logo.png" alt="Indu Toy" />
+          <h2 class="hero-title">Dunia Mainan <span>Ceria</span> untuk Si&nbsp;Kecil</h2>
+          <p class="hero-sub">Mainan edukatif, boneka, kendaraan, hingga puzzle. Pilih, masukkan keranjang, lalu pesan langsung lewat WhatsApp.</p>
+
+          <div class="search-pill" role="search">
+            <label class="sp-field sp-search">
+              <span class="sp-ico">🔍</span>
+              <span class="sp-text"><b>Cari mainan</b><input type="search" id="catSearch" placeholder="Nama mainan..." /></span>
+            </label>
+            <label class="sp-field">
+              <span class="sp-ico">💰</span>
+              <span class="sp-text"><b>Harga</b>
+                <select id="catPrice">
+                  <option value="all">Semua harga</option>
+                  <option value="0-50000">≤ Rp50.000</option>
+                  <option value="50000-150000">Rp50rb – Rp150rb</option>
+                  <option value="150000-300000">Rp150rb – Rp300rb</option>
+                  <option value="300000-999999999">&gt; Rp300.000</option>
+                </select>
+              </span>
+            </label>
+            <button class="btn btn-red sp-go" id="catGo">Cari</button>
           </div>
-          <div class="hero-emoji" aria-hidden="true">🚂🧩🪀</div>
         </div>
 
-        <div class="card filters">
-          <div class="field grow">
-            <label for="catSearch">Cari mainan</label>
-            <input type="search" id="catSearch" placeholder="Ketik nama mainan..." />
-          </div>
-          <div class="field">
-            <label for="catCategory">Kategori</label>
-            <select id="catCategory"></select>
-          </div>
-          <div class="field">
-            <label for="catAge">Usia</label>
-            <select id="catAge"></select>
-          </div>
-          <div class="field">
-            <label for="catPrice">Rentang harga</label>
-            <select id="catPrice">
-              <option value="all">Semua harga</option>
-              <option value="0-50000">≤ Rp50.000</option>
-              <option value="50000-150000">Rp50.000 – Rp150.000</option>
-              <option value="150000-300000">Rp150.000 – Rp300.000</option>
-              <option value="300000-999999999">&gt; Rp300.000</option>
-            </select>
-          </div>
-          <button class="btn btn-ghost" id="catReset">↺ Reset</button>
-        </div>
+        <section class="shop-section" id="categories">
+          <div class="section-head"><h3>Jelajahi Kategori</h3></div>
+          <div class="cat-cards" id="catChips"></div>
+        </section>
 
-        <div class="chips" id="catChips"></div>
-        <div class="product-grid" id="catalogGrid"></div>
+        <section class="shop-section" id="featured">
+          <div class="section-head">
+            <h3>Mainan Pilihan</h3>
+            <div class="section-tools">
+              <div class="segmented small" id="catTabs">
+                <button data-tab="all" class="active">Semua</button>
+                <button data-tab="fav">❤️ Favorit</button>
+              </div>
+              <select id="catSort" class="sort-select" aria-label="Urutkan">
+                <option value="name">Nama A–Z</option>
+                <option value="price-asc">Harga termurah</option>
+                <option value="price-desc">Harga termahal</option>
+                <option value="stock">Stok terbanyak</option>
+              </select>
+            </div>
+          </div>
+          <div class="crumbs"><span id="catCrumbs">Beranda</span><button class="link-btn" id="catReset" hidden>↺ Reset filter</button></div>
+          <div class="product-grid" id="catalogGrid"></div>
+        </section>
+
+        <footer class="shop-footer">
+          <img src="/assets/logo.png" alt="Indu Toy" />
+          <p>Toko mainan serba ada untuk si kecil. Tanya stok atau pesan langsung lewat WhatsApp.</p>
+          <a class="btn btn-wa chat-store-link" href="#" target="_blank" rel="noopener">💬 Chat Toko via WhatsApp</a>
+          <small>© <span class="year"></span> Indu Toy</small>
+        </footer>
       </section>
 
       <!-- ===== VIEW: KASIR / POS ===== -->
@@ -253,8 +303,8 @@
         <div class="kpis">
           <div class="kpi kpi-red"><span>💰 Omzet</span><b id="kpiRevenue">Rp0</b></div>
           <div class="kpi kpi-yellow"><span>🧾 Transaksi</span><b id="kpiTx">0</b></div>
-          <div class="kpi kpi-blue"><span>🧸 Item terjual</span><b id="kpiItems">0</b></div>
-          <div class="kpi kpi-green"><span>📈 Rata-rata / transaksi</span><b id="kpiAvg">Rp0</b></div>
+          <div class="kpi kpi-orange"><span>🧸 Item terjual</span><b id="kpiItems">0</b></div>
+          <div class="kpi kpi-amber"><span>📈 Rata-rata / transaksi</span><b id="kpiAvg">Rp0</b></div>
         </div>
 
         <div class="report-grid">
@@ -401,7 +451,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="/config.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

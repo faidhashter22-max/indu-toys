@@ -3,6 +3,23 @@
 Aplikasi web toko mainan: Katalog pelanggan (order via WhatsApp), Kasir POS dengan struk PDF,
 Kelola Stok (impor/ekspor CSV/Excel), dan Laporan Penjualan. Data disimpan di Supabase.
 
+## Dua link
+
+| Link | Untuk | Isi |
+|------|-------|-----|
+| `/` | Pembeli online (dibagikan ke pelanggan) | Katalog, keranjang, order via WhatsApp. Tanpa menu staf. |
+| `/staff` (juga `/kasir`, `/admin`) | Kasir & admin | Login staf → Kasir/POS, Kelola Stok, Laporan. |
+
+## Menjalankan lokal
+
+Butuh Node.js (tanpa `npm install`):
+
+```bash
+node dev-server.js
+```
+
+Lalu buka **http://localhost:5500** (pembeli) dan **http://localhost:5500/staff** (staf).
+
 ## Setup Supabase
 
 1. Buka proyek Supabase → **SQL Editor** → **New query**, tempel isi [`supabase/schema.sql`](supabase/schema.sql), lalu **Run**.
@@ -27,12 +44,4 @@ Kelola Stok (impor/ekspor CSV/Excel), dan Laporan Penjualan. Data disimpan di Su
 ## Deploy ke Vercel
 
 Impor repo ini di Vercel → Framework Preset **Other**, tanpa build command → **Deploy**.
-Aplikasi berupa file statis (`index.html`, `styles.css`, `app.js`, `config.js`).
-
-## Menjalankan lokal
-
-Buka `index.html` langsung di browser, atau jalankan server statis apa pun, misalnya:
-
-```bash
-npx http-server -p 5500
-```
+Link `/staff` diatur oleh `vercel.json`, jadi otomatis jalan setelah deploy.

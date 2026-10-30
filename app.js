@@ -11,6 +11,7 @@
     catalogCart: "indutoys.catalogCart",
     posCart: "indutoys.posCart",
     theme: "indutoys.theme",
+    favorites: "indutoys.favorites",
   };
   const LOW_STOCK = 5;
   const AGES = ["0-2 tahun", "3-5 tahun", "6-8 tahun", "9+ tahun"];
@@ -115,6 +116,7 @@
   const ui = {
     view: "catalog",
     catCategory: "all",
+    catTab: "all",
     payMethod: "Tunai",
     reportPeriod: "today",
     recapMode: "daily",
@@ -131,6 +133,20 @@
   const isStaff = () => role() === "kasir" || role() === "admin";
   const isAdmin = () => role() === "admin";
   const ACCESS = { catalog: () => true, pos: isStaff, stock: isAdmin, report: isAdmin };
+
+  // Dua link: "/" untuk pembeli (katalog saja), "/staff" (atau ?staff) untuk kasir & admin
+  const MODE = /^\/(staff|kasir|admin)\/?$/i.test(location.pathname) || new URLSearchParams(location.search).has("staff") ? "staff" : "shop";
+  const MODE_VIEWS = { shop: ["catalog"], staff: ["pos", "stock", "report"] };
+  document.body.dataset.mode = MODE;
+  if (MODE === "staff") {
+    document.title = "Indu Toys — Panel Staf";
+    $("#brandTagline").textContent = "Panel Staf & Kasir";
+    // Jangan sempat menampilkan katalog selama data dimuat
+    $("#pageTitle").textContent = "Panel Staf";
+    $("#openCartBtn").hidden = true;
+    $$(".view").forEach((v) => v.classList.remove("active"));
+    $$(".nav-item").forEach((b) => b.classList.remove("active"));
+  }
 
   /* ---------- DATA LAYER ---------- */
   const fromDbProduct = (r) => ({
@@ -181,17 +197,17 @@
   function applyTheme(theme) {
     document.documentElement.dataset.theme = theme;
     $("#themeToggle").checked = theme === "dark";
+    $("#themeBtnShop").textContent = theme === "dark" ? "☀️" : "🌙";
   }
+  const setTheme = (t) => { applyTheme(t); store.set(KEYS.theme, t); };
   const savedTheme = store.get(KEYS.theme, null);
   applyTheme(savedTheme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
-  $("#themeToggle").addEventListener("change", (e) => {
-    const t = e.target.checked ? "dark" : "light";
-    applyTheme(t);
-    store.set(KEYS.theme, t);
-  });
+  $("#themeToggle").addEventListener("change", (e) => setTheme(e.target.checked ? "dark" : "light"));
+  $("#themeBtnShop").addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
 
   const TITLES = { catalog: "Katalog Mainan", pos: "Kasir / POS", stock: "Kelola Stok", report: "Laporan Penjualan" };
   function setView(view) {
+    if (!MODE_VIEWS[MODE].includes(view)) view = MODE_VIEWS[MODE][0];
     ui.view = view;
     $$(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
     $("#pageTitle").textContent = TITLES[view];
@@ -209,10 +225,10 @@
   }
   function renderLocked() {
     const needs = ui.view === "pos" ? "kasir atau admin" : "admin";
-    $("#lockedTitle").textContent = `${TITLES[ui.view]} khusus ${needs}`;
+    $("#lockedTitle").textContent = session ? `${TITLES[ui.view]} khusus ${needs}` : "Panel Staf Indu Toys";
     $("#lockedLoginBtn").hidden = !!session;
     $("#lockedText").textContent = !session
-      ? `Silakan masuk dengan akun staf untuk membuka ${TITLES[ui.view]}.`
+      ? "Halaman ini khusus kasir dan admin toko. Silakan masuk dengan akun staf."
       : role() === "pending"
         ? "Akun kamu belum diberi peran. Minta admin toko mengaktifkan akunmu di Kelola Stok → Pengguna & Peran Staf."
         : `Akun kamu berperan ${ROLES[role()]}. Halaman ini hanya untuk ${needs}.`;
@@ -221,7 +237,7 @@
     $("#sidebar").classList.toggle("open", open);
     $("#sidebarBackdrop").classList.toggle("show", open);
   }
-  $$(".nav-item").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+  $$(".nav-item[data-view]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
   $("#menuBtn").addEventListener("click", () => toggleSidebar(true));
   $("#sidebarBackdrop").addEventListener("click", () => toggleSidebar(false));
 
@@ -257,7 +273,7 @@
      LOGIN STAF
      ========================================================= */
   function renderAuth() {
-    $$(".nav-item").forEach((b) => b.classList.toggle("locked", !ACCESS[b.dataset.view]()));
+    $$(".nav-item[data-view]").forEach((b) => b.classList.toggle("locked", !ACCESS[b.dataset.view]()));
     $("#userBox").innerHTML = session
       ? `<div class="user-email" title="${esc(session.user.email)}">👤 ${esc(profile?.full_name || session.user.email)}</div>
          <div class="user-row"><span class="role-tag">${ROLES[role()] || "Menunggu"}</span><button class="link" id="logoutBtn">Keluar</button></div>`
@@ -314,59 +330,111 @@
     sel.value = options.includes(current) ? current : "all";
   }
 
+  const CATEGORY_ICONS = {
+    edukatif: "🧠", boneka: "🧸", kendaraan: "🚗", puzzle: "🧩", konstruksi: "🧱", peran: "🍳",
+    bayi: "🍼", outdoor: "⚽", olahraga: "⚽", musik: "🎵", seni: "🎨", robot: "🤖", lainnya: "🎁",
+  };
+  const categoryIcon = (c) => CATEGORY_ICONS[String(c).toLowerCase()] || "🎁";
+  const SORTERS = {
+    name: (a, b) => a.name.localeCompare(b.name),
+    "price-asc": (a, b) => a.price - b.price,
+    "price-desc": (a, b) => b.price - a.price,
+    stock: (a, b) => b.stock - a.stock,
+  };
+  // Favorit pembeli disimpan di perangkat masing-masing
+  let favorites = new Set(store.get(KEYS.favorites, []));
+  const saveFavorites = () => store.set(KEYS.favorites, [...favorites]);
+
   function renderCatalog() {
     const cats = categories();
-    fillSelect($("#catCategory"), cats, "Semua kategori");
     if (ui.catCategory !== "all" && !cats.includes(ui.catCategory)) ui.catCategory = "all";
-    $("#catCategory").value = ui.catCategory;
-    if (!$("#catAge").options.length) fillSelect($("#catAge"), AGES, "Semua usia");
 
-    $("#catChips").innerHTML = ["all", ...cats].map((c) =>
-      `<button class="chip ${ui.catCategory === c ? "active" : ""}" data-chip="${esc(c)}">${c === "all" ? "✨ Semua" : esc(c)}</button>`).join("");
+    const countBy = (c) => c === "all" ? products.length : products.filter((p) => p.category === c).length;
+    $("#catChips").innerHTML = ["all", ...cats].map((c) => `
+      <button class="cat-card ${ui.catCategory === c ? "active" : ""}" data-chip="${esc(c)}">
+        <span class="cat-ico">${c === "all" ? "✨" : categoryIcon(c)}</span>
+        <b>${c === "all" ? "Semua" : esc(c)}</b>
+        <small>${countBy(c)} mainan</small>
+      </button>`).join("");
 
     const q = $("#catSearch").value.trim().toLowerCase();
-    const age = $("#catAge").value;
-    const [min, max] = $("#catPrice").value === "all" ? [0, Infinity] : $("#catPrice").value.split("-").map(Number);
+    const priceSel = $("#catPrice");
+    const [min, max] = priceSel.value === "all" ? [0, Infinity] : priceSel.value.split("-").map(Number);
     const list = products.filter((p) =>
       (!q || p.name.toLowerCase().includes(q)) &&
       (ui.catCategory === "all" || p.category === ui.catCategory) &&
-      (age === "all" || p.age === age) &&
-      p.price >= min && p.price <= max);
+      (ui.catTab !== "fav" || favorites.has(p.id)) &&
+      p.price >= min && p.price <= max).sort(SORTERS[$("#catSort").value] || SORTERS.name);
+
+    // Jejak filter aktif
+    const parts = [];
+    if (ui.catCategory !== "all") parts.push(esc(ui.catCategory));
+    if (priceSel.value !== "all") parts.push(esc(priceSel.selectedOptions[0].textContent));
+    if (q) parts.push(`“${esc(q)}”`);
+    if (ui.catTab === "fav") parts.push("Favorit");
+    $("#catCrumbs").innerHTML = `Beranda${parts.map((p) => ` &nbsp;|&nbsp; <b>${p}</b>`).join("")} &nbsp;·&nbsp; ${list.length} mainan`;
+    $("#catReset").hidden = !parts.length;
 
     $("#catalogGrid").innerHTML = list.length ? list.map((p) => {
       const inCart = catalogCart.find((c) => c.id === p.id)?.qty || 0;
       const soldOut = p.stock <= 0;
+      const fav = favorites.has(p.id);
       return `
         <article class="product">
-          <div class="product-img">${imgTag(p.image, p.name)}${stockBadge(p)}<span class="age-tag">${esc(p.age)}</span></div>
+          <div class="product-img">
+            ${imgTag(p.image, p.name)}
+            <span class="age-tag">${esc(p.age)}</span>
+            <button class="fav-btn ${fav ? "on" : ""}" data-fav="${p.id}" aria-label="${fav ? "Hapus dari" : "Tambah ke"} favorit" aria-pressed="${fav}">${fav ? "❤️" : "🤍"}</button>
+            ${stockBadge(p)}
+          </div>
           <div class="product-body">
-            <span class="badge badge-cat" style="align-self:flex-start">${esc(p.category)}</span>
-            <h4>${esc(p.name)}</h4>
-            <p>${esc(p.desc || "")}</p>
-            <div class="price">${fmtRp(p.price)}</div>
-            <div class="product-foot">
-              <span class="stock-txt">${soldOut ? "Stok habis" : `Stok: ${p.stock} pcs`}${inCart ? ` · 🛒 ${inCart}` : ""}</span>
-              <button class="btn btn-red btn-sm" data-add-catalog="${p.id}" ${soldOut ? "disabled" : ""}>＋ Keranjang</button>
+            <div class="pb-row"><h4>${esc(p.name)}</h4><span class="price">${fmtRp(p.price)}</span></div>
+            <div class="pb-meta">${categoryIcon(p.category)} ${esc(p.category)}</div>
+            <div class="pb-foot">
+              <span class="stock-txt">${soldOut ? "Stok habis" : `Stok ${p.stock} pcs`}${inCart ? ` · <span class="in-cart">🛒 ${inCart} di keranjang</span>` : ""}</span>
+              <button class="add-btn" data-add-catalog="${p.id}" ${soldOut ? "disabled" : ""} aria-label="Tambah ${esc(p.name)} ke keranjang" title="Tambah ke keranjang">🛒</button>
             </div>
           </div>
         </article>`;
-    }).join("") : `<div class="empty"><span class="big">🔍</span>${products.length ? "Mainan tidak ditemukan. Coba ubah kata kunci atau filter." : "Belum ada mainan di etalase."}</div>`;
+    }).join("") : `<div class="empty"><span class="big">${ui.catTab === "fav" ? "🤍" : "🔍"}</span>${
+      !products.length ? "Belum ada mainan di etalase."
+      : ui.catTab === "fav" && !favorites.size ? "Belum ada favorit. Ketuk 🤍 pada mainan untuk menyimpannya."
+      : "Mainan tidak ditemukan. Coba ubah kata kunci atau filter."}</div>`;
 
     renderCatalogCart();
   }
 
+  const scrollToSection = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  $$("[data-scroll]").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); scrollToSection(a.dataset.scroll); }));
+  $("#catGo").addEventListener("click", () => { renderCatalog(); scrollToSection("featured"); });
   $("#catSearch").addEventListener("input", renderCatalog);
-  ["#catAge", "#catPrice"].forEach((s) => $(s).addEventListener("change", renderCatalog));
-  $("#catCategory").addEventListener("change", (e) => { ui.catCategory = e.target.value; renderCatalog(); });
+  $("#catSearch").addEventListener("keydown", (e) => { if (e.key === "Enter") scrollToSection("featured"); });
+  ["#catPrice", "#catSort"].forEach((s) => $(s).addEventListener("change", renderCatalog));
   $("#catChips").addEventListener("click", (e) => {
     const c = e.target.closest("[data-chip]");
-    if (c) { ui.catCategory = c.dataset.chip; renderCatalog(); }
+    if (c) { ui.catCategory = c.dataset.chip; renderCatalog(); scrollToSection("featured"); }
+  });
+  $("#catTabs").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tab]");
+    if (!b) return;
+    ui.catTab = b.dataset.tab;
+    $$("#catTabs button").forEach((x) => x.classList.toggle("active", x === b));
+    renderCatalog();
   });
   $("#catReset").addEventListener("click", () => {
-    $("#catSearch").value = ""; $("#catAge").value = "all"; $("#catPrice").value = "all"; ui.catCategory = "all";
+    $("#catSearch").value = ""; $("#catPrice").value = "all"; ui.catCategory = "all";
+    ui.catTab = "all"; $$("#catTabs button").forEach((x) => x.classList.toggle("active", x.dataset.tab === "all"));
     renderCatalog();
   });
   $("#catalogGrid").addEventListener("click", (e) => {
+    const f = e.target.closest("[data-fav]");
+    if (f) {
+      const id = f.dataset.fav;
+      favorites.has(id) ? favorites.delete(id) : favorites.add(id);
+      saveFavorites();
+      renderCatalog();
+      return;
+    }
     const b = e.target.closest("[data-add-catalog]");
     if (!b) return;
     const p = findProduct(b.dataset.addCatalog);
@@ -969,6 +1037,8 @@
     $("#setAddress").value = settings.address;
     $("#setBank").value = settings.bank;
     $("#bankText").textContent = settings.bank;
+    const chatUrl = `https://wa.me/${settings.wa}?text=${encodeURIComponent(`Halo ${settings.storeName}, saya mau tanya-tanya mainan 😊`)}`;
+    $$(".chat-store-link").forEach((a) => { a.href = chatUrl; });
   }
   $("#settingsForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -1218,7 +1288,7 @@
   });
 
   /* ---------- INIT ---------- */
-  $("#year").textContent = new Date().getFullYear();
+  $$(".year").forEach((el) => { el.textContent = new Date().getFullYear(); });
   loading(true, "Memuat data toko...");
   try {
     const [{ data: sess }] = await Promise.all([sb.auth.getSession(), loadSettings(), loadProducts()]);
