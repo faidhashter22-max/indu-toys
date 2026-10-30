@@ -37,6 +37,8 @@
         <button class="nav-item" data-view="pos"><span class="nav-ico">🧾</span><span>Kasir / POS</span></button>
         <button class="nav-item" data-view="stock"><span class="nav-ico">📦</span><span>Kelola Stok</span><span class="nav-badge" id="navLowBadge" hidden>0</span></button>
         <button class="nav-item" data-view="report"><span class="nav-ico">📊</span><span>Laporan Penjualan</span></button>
+        <button class="nav-item" data-view="settings"><span class="nav-ico">⚙️</span><span>Pengaturan Toko</span></button>
+        <button class="nav-item" data-view="users"><span class="nav-ico">👥</span><span>Pengguna & Staf</span></button>
         <a class="nav-item staff-only" href="/" target="_blank" rel="noopener"><span class="nav-ico">🛍️</span><span>Buka Toko Online ↗</span></a>
       </nav>
 
@@ -244,9 +246,13 @@
             </table>
           </div>
         </div>
+      </section>
 
-        <details class="card settings">
-          <summary>⚙️ Pengaturan Toko</summary>
+      <!-- ===== VIEW: PENGATURAN TOKO ===== -->
+      <section class="view" id="view-settings">
+        <div class="card page-card">
+          <div class="card-head"><h3>⚙️ Pengaturan Toko</h3></div>
+          <p class="muted-text">Data ini tampil di halaman pelanggan, pesan WhatsApp, dan struk belanja.</p>
           <form id="settingsForm" class="form-grid">
             <div class="field"><label for="setStoreName">Nama toko</label><input id="setStoreName" required /></div>
             <div class="field"><label for="setWa">No. WhatsApp toko (format 62...)</label><input id="setWa" inputmode="numeric" pattern="62[0-9]{8,13}" required /></div>
@@ -256,18 +262,21 @@
               <button type="submit" class="btn btn-red">💾 Simpan Pengaturan</button>
             </div>
           </form>
-        </details>
+        </div>
+      </section>
 
-        <details class="card settings" id="usersPanel">
-          <summary>👥 Pengguna & Peran Staf</summary>
-          <p class="muted-text">Tambah akun staf di Supabase Dashboard → Authentication → Users → <b>Add user</b>. Akun baru berstatus <b>Menunggu</b> sampai kamu beri peran di sini.</p>
+      <!-- ===== VIEW: PENGGUNA & STAF ===== -->
+      <section class="view" id="view-users">
+        <div class="card table-card">
+          <div class="card-head"><h3>👥 Pengguna & Peran Staf</h3></div>
+          <p class="muted-text pad">Tambah akun staf di Supabase Dashboard → Authentication → Users → <b>Add user</b>. Akun baru berstatus <b>Menunggu</b> sampai kamu beri peran di sini.</p>
           <div class="table-wrap">
             <table class="table" id="usersTable">
               <thead><tr><th>Email</th><th>Terdaftar</th><th>Peran</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
-        </details>
+        </div>
       </section>
 
       <!-- ===== VIEW: LAPORAN ===== -->

@@ -131,11 +131,11 @@
   const role = () => profile?.role || null;
   const isStaff = () => role() === "kasir" || role() === "admin";
   const isAdmin = () => role() === "admin";
-  const ACCESS = { catalog: () => true, pos: isStaff, stock: isAdmin, report: isAdmin };
+  const ACCESS = { catalog: () => true, pos: isStaff, stock: isAdmin, report: isAdmin, settings: isAdmin, users: isAdmin };
 
   // Dua link: "/" untuk pembeli (katalog saja), "/staff" (atau ?staff) untuk kasir & admin
   const MODE = /^\/(staff|kasir|admin)\/?$/i.test(location.pathname) || new URLSearchParams(location.search).has("staff") ? "staff" : "shop";
-  const MODE_VIEWS = { shop: ["catalog"], staff: ["pos", "stock", "report"] };
+  const MODE_VIEWS = { shop: ["catalog"], staff: ["pos", "stock", "report", "settings", "users"] };
   document.body.dataset.mode = MODE;
   if (MODE === "staff") {
     document.title = "Indu Toys — Panel Staf";
@@ -204,7 +204,7 @@
   $("#themeToggle").addEventListener("change", (e) => setTheme(e.target.checked ? "dark" : "light"));
   $("#themeBtnShop").addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
 
-  const TITLES = { catalog: "Katalog Mainan", pos: "Kasir / POS", stock: "Kelola Stok", report: "Laporan Penjualan" };
+  const TITLES = { catalog: "Katalog Mainan", pos: "Kasir / POS", stock: "Kelola Stok", report: "Laporan Penjualan", settings: "Pengaturan Toko", users: "Pengguna & Staf" };
   function setView(view) {
     if (!MODE_VIEWS[MODE].includes(view)) view = MODE_VIEWS[MODE][0];
     ui.view = view;
@@ -220,7 +220,7 @@
     const allowed = ACCESS[ui.view]();
     $$(".view").forEach((v) => v.classList.toggle("active", v.id === (allowed ? "view-" + ui.view : "view-locked")));
     if (!allowed) return renderLocked();
-    ({ catalog: renderCatalog, pos: renderPOS, stock: renderStock, report: renderReport })[ui.view]();
+    ({ catalog: renderCatalog, pos: renderPOS, stock: renderStock, report: renderReport, settings: fillSettings, users: renderUsers })[ui.view]();
   }
   function renderLocked() {
     const needs = ui.view === "pos" ? "kasir atau admin" : "admin";
@@ -798,7 +798,6 @@
 
     $("#categoryList").innerHTML = categories().map((c) => `<option value="${esc(c)}">`).join("");
     updateLowBadge();
-    if ($("#usersPanel").open) renderUsers();
   }
 
   $("#stockSearch").addEventListener("input", renderStock);
@@ -1057,7 +1056,6 @@
         </td>
       </tr>`).join("");
   }
-  $("#usersPanel").addEventListener("toggle", (e) => { if (e.target.open) renderUsers(); });
   $("#usersTable").addEventListener("change", async (e) => {
     const sel = e.target.closest("[data-user-role]");
     if (!sel) return;
