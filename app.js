@@ -691,13 +691,13 @@
   function showReceipt(tx) {
     ui.lastTx = tx;
     $("#receiptPreview").innerHTML = `
-      <div class="r-center r-title">${esc(settings.storeName.toUpperCase())}</div>
+      <img class="r-logo" src="/assets/logo.png" alt="" />
+      <div class="r-center r-title">${esc(settings.storeName)}</div>
       <div class="r-center">${esc(settings.address)}</div>
       <div class="r-center">WA: ${esc(settings.wa)}</div>
       <hr>
       <div class="r-row"><span>No</span><span>${esc(tx.id)}</span></div>
       <div class="r-row"><span>Tanggal</span><span>${fmtDateTime(tx.date)}</span></div>
-      ${tx.cashier ? `<div class="r-row"><span>Kasir</span><span>${esc(tx.cashier)}</span></div>` : ""}
       <hr>
       ${tx.items.map((i) => `<div>${esc(i.name)}</div><div class="r-row"><span>${i.qty} x ${fmtRp(i.price)}</span><span>${fmtRp(i.qty * i.price)}</span></div>`).join("")}
       <hr>
@@ -710,46 +710,11 @@
   }
 
   async function generateReceiptPDF(tx) {
-    if (!window.jspdf) return toast("Pustaka PDF gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.", "error");
+    if (!window.jspdf || !window.buildReceiptPDF) return toast("Pustaka PDF gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.", "error");
     loading(true, "Membuat struk PDF...");
     try {
       await sleep(350); // beri waktu indikator loading tampil
-      const { jsPDF } = window.jspdf;
-      const W = 80, M = 5, lh = 4.4;
-      const height = 82 + tx.items.length * lh * 2 + (tx.method === "Tunai" ? lh : 0);
-      const doc = new jsPDF({ unit: "mm", format: [W, Math.max(height, 110)] });
-      let y = 9;
-      const center = (t, size = 8, bold = false) => { doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(size); doc.text(t, W / 2, y, { align: "center" }); y += lh; };
-      const row = (l, r, bold = false) => {
-        doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(bold ? 9 : 8);
-        doc.text(l, M, y); doc.text(r, W - M, y, { align: "right" }); y += lh;
-      };
-      const line = () => { doc.setLineDashPattern([1, 1], 0); doc.line(M, y - 2, W - M, y - 2); y += 2; };
-
-      doc.setFillColor(220, 38, 38); doc.rect(0, 0, W, 3, "F");
-      center(settings.storeName.toUpperCase(), 13, true); y += 1;
-      doc.splitTextToSize(settings.address || "", W - 2 * M).forEach((t) => center(t));
-      center("WA: " + settings.wa);
-      line();
-      row("No. Nota", tx.id);
-      row("Tanggal", fmtDateTime(tx.date));
-      row("Kasir", doc.splitTextToSize(tx.cashier || "-", 45)[0]);
-      line();
-      tx.items.forEach((i) => {
-        doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-        doc.text(doc.splitTextToSize(i.name, W - 2 * M)[0], M, y); y += lh;
-        row(`  ${i.qty} x ${fmtRp(i.price)}`, fmtRp(i.qty * i.price));
-      });
-      line();
-      row("TOTAL", fmtRp(tx.total), true);
-      row(`Bayar (${tx.method})`, fmtRp(tx.paid));
-      if (tx.method === "Tunai") row("Kembalian", fmtRp(tx.change));
-      line();
-      center("Terima kasih telah berbelanja!", 8, true);
-      center("Barang yang sudah dibeli tidak dapat", 7);
-      center("ditukar/dikembalikan tanpa nota ini.", 7);
-      doc.setFillColor(250, 204, 21); doc.rect(0, doc.internal.pageSize.getHeight() - 3, W, 3, "F");
-
+      const doc = await window.buildReceiptPDF(tx, settings, { fmtRp, fmtDateTime });
       doc.save(`Struk-${tx.id}.pdf`);
       toast("Struk PDF berhasil diunduh 📄 Kirim manual ke WhatsApp pelanggan.");
     } catch (err) {

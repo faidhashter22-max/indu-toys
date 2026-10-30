@@ -666,3 +666,4 @@ textarea { resize: vertical; }
 /* ============ HALAMAN PENGATURAN & PENGGUNA ============ */
 .page-card { max-width: 860px; }
 .table-card .muted-text.pad { padding: 0 18px; }
+.receipt .r-logo { width: 110px; margin: 0 auto 6px; }
