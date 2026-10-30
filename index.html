@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Indu Toys — Toko Mainan</title>
+  <meta name="description" content="Katalog, kasir POS, kelola stok, dan laporan penjualan toko mainan Indu Toys." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23DC2626'/><text x='50' y='68' font-size='52' text-anchor='middle'>🧸</text></svg>" />
+</head>
+<body>
+  <div class="app">
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-logo">🧸</div>
+        <div class="brand-text">
+          <span class="brand-name"><span class="b-red">Indu</span> <span class="b-yellow">Toys</span></span>
+          <small>Toko Mainan Serba Ada</small>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="catalog"><span class="nav-ico">🛍️</span><span>Katalog Mainan</span></button>
+        <button class="nav-item" data-view="pos"><span class="nav-ico">🧾</span><span>Kasir / POS</span></button>
+        <button class="nav-item" data-view="stock"><span class="nav-ico">📦</span><span>Kelola Stok</span><span class="nav-badge" id="navLowBadge" hidden>0</span></button>
+        <button class="nav-item" data-view="report"><span class="nav-ico">📊</span><span>Laporan Penjualan</span></button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <label class="theme-switch">
+          <span class="theme-label">☀️ Terang</span>
+          <input type="checkbox" id="themeToggle" />
+          <span class="slider"></span>
+          <span class="theme-label">🌙 Gelap</span>
+        </label>
+        <p class="copyright">© <span id="year"></span> Indu Toys</p>
+      </div>
+    </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- ===== MAIN ===== -->
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Buka menu">☰</button>
+        <h1 id="pageTitle">Katalog Mainan</h1>
+        <div class="topbar-actions">
+          <button class="btn btn-red cart-fab" id="openCartBtn" data-show-on="catalog">
+            🛒 Keranjang <span class="pill" id="catalogCartCount">0</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- ===== VIEW: KATALOG ===== -->
+      <section class="view active" id="view-catalog">
+        <div class="hero">
+          <div>
+            <h2>Halo, selamat datang di Indu Toys! 🎈</h2>
+            <p>Pilih mainan favorit si kecil, masukkan ke keranjang, lalu pesan langsung lewat WhatsApp.</p>
+          </div>
+          <div class="hero-emoji" aria-hidden="true">🚂🧩🪀</div>
+        </div>
+
+        <div class="card filters">
+          <div class="field grow">
+            <label for="catSearch">Cari mainan</label>
+            <input type="search" id="catSearch" placeholder="Ketik nama mainan..." />
+          </div>
+          <div class="field">
+            <label for="catCategory">Kategori</label>
+            <select id="catCategory"></select>
+          </div>
+          <div class="field">
+            <label for="catAge">Usia</label>
+            <select id="catAge"></select>
+          </div>
+          <div class="field">
+            <label for="catPrice">Rentang harga</label>
+            <select id="catPrice">
+              <option value="all">Semua harga</option>
+              <option value="0-50000">≤ Rp50.000</option>
+              <option value="50000-150000">Rp50.000 – Rp150.000</option>
+              <option value="150000-300000">Rp150.000 – Rp300.000</option>
+              <option value="300000-999999999">&gt; Rp300.000</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost" id="catReset">↺ Reset</button>
+        </div>
+
+        <div class="chips" id="catChips"></div>
+        <div class="product-grid" id="catalogGrid"></div>
+      </section>
+
+      <!-- ===== VIEW: KASIR / POS ===== -->
+      <section class="view" id="view-pos">
+        <div class="pos-layout">
+          <div class="card pos-products">
+            <div class="field">
+              <label for="posSearch">Cari & klik mainan untuk menambah</label>
+              <input type="search" id="posSearch" placeholder="Nama mainan / kategori..." />
+            </div>
+            <div class="pos-grid" id="posGrid"></div>
+          </div>
+
+          <div class="card pos-cart">
+            <div class="card-head">
+              <h3>🧾 Keranjang Kasir</h3>
+              <button class="btn btn-ghost btn-sm" id="posClear">Kosongkan</button>
+            </div>
+            <div class="pos-cart-list" id="posCartList"></div>
+            <div class="alert alert-warn" id="posStockWarn" hidden></div>
+
+            <div class="totals">
+              <div><span>Jumlah item</span><b id="posItemCount">0</b></div>
+              <div class="grand"><span>Total</span><b id="posTotal">Rp0</b></div>
+            </div>
+
+            <div class="pay-methods" role="tablist">
+              <button class="pay-btn active" data-method="Tunai">💵 Tunai</button>
+              <button class="pay-btn" data-method="Transfer Bank">🏦 Transfer</button>
+              <button class="pay-btn" data-method="QRIS">📱 QRIS</button>
+            </div>
+
+            <div class="pay-panel" id="payTunai">
+              <div class="field">
+                <label for="cashInput">Uang diterima</label>
+                <input type="text" inputmode="numeric" id="cashInput" placeholder="0" />
+              </div>
+              <div class="quick-cash" id="quickCash"></div>
+              <div class="change-box" id="changeBox">Kembalian: <b>Rp0</b></div>
+            </div>
+            <div class="pay-panel" id="payTransfer" hidden>
+              <div class="bank-info">
+                <p>Transfer ke rekening toko:</p>
+                <p><b id="bankText">BCA 1234567890 a.n. Indu Toys</b></p>
+                <small>Pastikan dana sudah masuk sebelum memproses transaksi.</small>
+              </div>
+            </div>
+            <div class="pay-panel" id="payQris" hidden>
+              <div class="qris-box">
+                <div class="qris-code" id="qrisCode"></div>
+                <small>Minta pelanggan memindai QRIS toko, lalu cek notifikasi pembayaran.</small>
+              </div>
+            </div>
+
+            <button class="btn btn-red btn-block btn-lg" id="posProcess">✅ Proses Transaksi</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VIEW: KELOLA STOK ===== -->
+      <section class="view" id="view-stock">
+        <div class="alert alert-warn" id="lowStockBanner" hidden></div>
+
+        <div class="card toolbar">
+          <div class="field grow">
+            <label for="stockSearch">Cari produk</label>
+            <input type="search" id="stockSearch" placeholder="Nama / kategori..." />
+          </div>
+          <label class="check"><input type="checkbox" id="stockLowOnly" /> Hanya stok menipis</label>
+          <div class="toolbar-actions">
+            <button class="btn btn-red" id="addProductBtn">＋ Tambah Mainan</button>
+            <label class="btn btn-yellow" for="importFile">⬆️ Impor CSV/Excel</label>
+            <input type="file" id="importFile" accept=".csv,.xlsx,.xls" hidden />
+            <div class="dropdown">
+              <button class="btn btn-ghost" data-dropdown>⬇️ Ekspor ▾</button>
+              <div class="dropdown-menu">
+                <button data-export-products="csv">Ekspor CSV</button>
+                <button data-export-products="xlsx">Ekspor Excel (.xlsx)</button>
+                <button id="templateBtn">Unduh template impor</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-wrap">
+            <table class="table" id="stockTable">
+              <thead>
+                <tr>
+                  <th>Mainan</th><th>Kategori</th><th>Usia</th><th class="num">Harga</th><th class="num">Stok</th><th class="center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <details class="card settings">
+          <summary>⚙️ Pengaturan Toko</summary>
+          <form id="settingsForm" class="form-grid">
+            <div class="field"><label for="setStoreName">Nama toko</label><input id="setStoreName" required /></div>
+            <div class="field"><label for="setWa">No. WhatsApp toko (format 62...)</label><input id="setWa" inputmode="numeric" pattern="62[0-9]{8,13}" required /></div>
+            <div class="field"><label for="setAddress">Alamat (tampil di struk)</label><input id="setAddress" /></div>
+            <div class="field"><label for="setBank">Info rekening transfer</label><input id="setBank" /></div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-red">💾 Simpan Pengaturan</button>
+              <button type="button" class="btn btn-ghost danger-text" id="resetDataBtn">Reset semua data</button>
+            </div>
+          </form>
+        </details>
+      </section>
+
+      <!-- ===== VIEW: LAPORAN ===== -->
+      <section class="view" id="view-report">
+        <div class="card toolbar">
+          <div class="segmented" id="reportPeriod">
+            <button data-period="today" class="active">Hari ini</button>
+            <button data-period="7d">7 hari</button>
+            <button data-period="month">Bulan ini</button>
+            <button data-period="all">Semua</button>
+            <button data-period="custom">Pilih tanggal</button>
+          </div>
+          <div class="custom-range" id="customRange" hidden>
+            <input type="date" id="rangeFrom" aria-label="Dari tanggal" /> s/d
+            <input type="date" id="rangeTo" aria-label="Sampai tanggal" />
+          </div>
+          <div class="toolbar-actions">
+            <div class="dropdown">
+              <button class="btn btn-yellow" data-dropdown>⬇️ Ekspor Penjualan ▾</button>
+              <div class="dropdown-menu right">
+                <button data-export-sales="csv">Ekspor CSV</button>
+                <button data-export-sales="xlsx">Ekspor Excel (.xlsx)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi kpi-red"><span>💰 Omzet</span><b id="kpiRevenue">Rp0</b></div>
+          <div class="kpi kpi-yellow"><span>🧾 Transaksi</span><b id="kpiTx">0</b></div>
+          <div class="kpi kpi-blue"><span>🧸 Item terjual</span><b id="kpiItems">0</b></div>
+          <div class="kpi kpi-green"><span>📈 Rata-rata / transaksi</span><b id="kpiAvg">Rp0</b></div>
+        </div>
+
+        <div class="report-grid">
+          <div class="card">
+            <div class="card-head">
+              <h3>Rekap Omzet</h3>
+              <div class="segmented small" id="recapMode">
+                <button data-mode="daily" class="active">Harian</button>
+                <button data-mode="monthly">Bulanan</button>
+              </div>
+            </div>
+            <div class="bar-chart" id="recapChart"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>🏆 Mainan Terlaris</h3></div>
+            <ol class="top-list" id="topProducts"></ol>
+            <div class="card-head mt"><h3>Metode Pembayaran</h3></div>
+            <div id="methodBreakdown" class="method-list"></div>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="card-head"><h3>Riwayat Transaksi</h3></div>
+          <div class="table-wrap">
+            <table class="table" id="txTable">
+              <thead>
+                <tr><th>No. Nota</th><th>Waktu</th><th>Item</th><th>Metode</th><th class="num">Total</th><th class="center">Struk</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ===== DRAWER KERANJANG KATALOG ===== -->
+  <div class="drawer-backdrop" id="cartBackdrop"></div>
+  <aside class="drawer" id="cartDrawer" aria-label="Keranjang belanja">
+    <div class="drawer-head">
+      <h3>🛒 Keranjang Belanja</h3>
+      <button class="icon-btn" id="closeCartBtn" aria-label="Tutup">✕</button>
+    </div>
+    <div class="drawer-body" id="catalogCartList"></div>
+    <div class="drawer-foot">
+      <div class="field">
+        <label for="custName">Nama pemesan (opsional)</label>
+        <input id="custName" placeholder="cth. Bunda Rina" />
+      </div>
+      <div class="field">
+        <label for="custNote">Catatan (opsional)</label>
+        <input id="custNote" placeholder="cth. Diambil sore ini / minta dibungkus kado" />
+      </div>
+      <div class="totals"><div class="grand"><span>Total</span><b id="catalogCartTotal">Rp0</b></div></div>
+      <button class="btn btn-wa btn-block btn-lg" id="waCheckoutBtn">💬 Order via WhatsApp</button>
+    </div>
+  </aside>
+
+  <!-- ===== MODAL PRODUK ===== -->
+  <div class="modal" id="productModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="productModalTitle">Tambah Mainan</h3>
+        <button class="icon-btn" data-close-modal aria-label="Tutup">✕</button>
+      </div>
+      <form id="productForm" class="form-grid">
+        <input type="hidden" id="pId" />
+        <div class="field span-2"><label for="pName">Nama mainan *</label><input id="pName" required maxlength="80" /></div>
+        <div class="field"><label for="pCategory">Kategori *</label><input id="pCategory" list="categoryList" required /></div>
+        <datalist id="categoryList"></datalist>
+        <div class="field"><label for="pAge">Usia *</label><select id="pAge" required></select></div>
+        <div class="field"><label for="pPrice">Harga (Rp) *</label><input id="pPrice" type="number" min="0" step="500" required /></div>
+        <div class="field"><label for="pStock">Stok (pcs) *</label><input id="pStock" type="number" min="0" step="1" required /></div>
+        <div class="field span-2"><label for="pImage">URL gambar</label><input id="pImage" type="url" placeholder="https://..." /></div>
+        <div class="field span-2">
+          <label for="pImageFile">…atau unggah gambar dari perangkat</label>
+          <input id="pImageFile" type="file" accept="image/*" />
+        </div>
+        <div class="field span-2"><label for="pDesc">Deskripsi singkat</label><textarea id="pDesc" rows="2" maxlength="200"></textarea></div>
+        <div class="img-preview span-2"><img id="pPreview" alt="Pratinjau gambar" /></div>
+        <div class="form-actions span-2">
+          <button type="button" class="btn btn-ghost" data-close-modal>Batal</button>
+          <button type="submit" class="btn btn-red">💾 Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MODAL STRUK ===== -->
+  <div class="modal" id="receiptModal" hidden>
+    <div class="modal-card narrow">
+      <div class="modal-head">
+        <h3>🎉 Transaksi Berhasil</h3>
+        <button class="icon-btn" data-close-modal aria-label="Tutup">✕</button>
+      </div>
+      <div class="receipt" id="receiptPreview"></div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" data-close-modal>Tutup</button>
+        <button class="btn btn-red" id="printReceiptBtn">🖨️ Cetak Struk PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL KONFIRMASI ===== -->
+  <div class="modal" id="confirmModal" hidden>
+    <div class="modal-card narrow">
+      <div class="modal-head"><h3 id="confirmTitle">Konfirmasi</h3></div>
+      <p id="confirmText"></p>
+      <div class="form-actions">
+        <button class="btn btn-ghost" id="confirmNo">Batal</button>
+        <button class="btn btn-red" id="confirmYes">Ya, lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LOADING & TOAST ===== -->
+  <div class="loading" id="loading" hidden>
+    <div class="loading-card">
+      <div class="spinner"><span>🧸</span></div>
+      <p id="loadingText">Memproses...</p>
+    </div>
+  </div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
